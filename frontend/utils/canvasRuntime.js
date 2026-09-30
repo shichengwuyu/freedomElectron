@@ -1073,6 +1073,10 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
     canvasState.connectionTargetId = '';
     canvasState.showHelp = project.nodes.length === 0;
     canvasState.contextMenu.open = false;
+    canvasState.nodePaletteOpen = false;
+    canvasState.quickConnectMenu.open = false;
+    canvasMention.open = false;
+    canvasFramePicker.visible = false;
     for (const node of project.nodes) {
       canvasEnsureNodeGenerationSettings(node);
       if (node.jobId && (node.status === 'running' || node.status === 'queued')) canvasPollNodeJob(node);
@@ -1092,6 +1096,11 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
     canvasLibrary.screen = 'library';
     canvasLibrary.activeId = '';
     canvasState.selectedId = '';
+    canvasState.nodePaletteOpen = false;
+    canvasState.quickConnectMenu.open = false;
+    canvasState.contextMenu.open = false;
+    canvasMention.open = false;
+    canvasFramePicker.visible = false;
     canvasDock.panel = '';
     if (project) void canvasRefreshProjectStats(project);
   }
@@ -2405,6 +2414,19 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
     const jobId = String(node?.jobId || '');
     if (!jobId || !api || canvasPollingJobs.has(jobId)) return;
     canvasPollingJobs.add(jobId);
+    // 任务可能属于「非当前活动」的画布。只有节点仍挂在某个项目上时才写回，
+    // 且不能用 touchActiveProject()——那会把 A 项目的结果写进 B 项目的视口和撤销栈。
+    const owningProject = () => canvasLibrary.projects.find((item) => item.nodes.includes(node)) || null;
+    const commitPollChange = () => {
+      const project = owningProject();
+      if (!project) return null;
+      if (project === canvasActiveProject.value) touchActiveProject();
+      else {
+        project.updatedAt = projectStamp();
+        saveCanvasProjects();
+      }
+      return project;
+    };
     const poll = async () => {
       if (node.jobId !== jobId) return canvasPollingJobs.delete(jobId);
       try {
@@ -2418,10 +2440,12 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
           node.mediaError = false;
         }
         if (job?.error) node.error = String(job.error);
-        touchActiveProject();
+        // 节点被清空 / 项目被删除后 owningProject 为 null —— 停止轮询，不再写回孤儿节点。
+        const project = commitPollChange();
+        if (!project) return canvasPollingJobs.delete(jobId);
         if (node.status === 'done') {
           canvasPollingJobs.delete(jobId);
-          if (node.mediaUrl && node.status === 'done') void canvasRefreshProjectStats(canvasActiveProject.value);
+          if (node.mediaUrl) void canvasRefreshProjectStats(project);
           message.success?.(`${node.title} 已完成`);
           return;
         }
@@ -2436,7 +2460,7 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
         node.status = 'error';
         node.error = error.message;
         node.message = error.message;
-        touchActiveProject();
+        commitPollChange();
       }
     };
     poll();
@@ -2613,7 +2637,7 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
         } else if (action.type === 'connect') {
           const from = canvasAgentNodeTarget(action.from, aliases);
           const to = canvasAgentNodeTarget(action.to, aliases);
-          if (!node) throw new Error('找不到要运行的节点');
+          if (!from || !to) throw new Error('找不到要连接的节点');
           canvasConnectNodes(from.id, to.id);
           results.push({ ...action, ok: true });
         } else if (action.type === 'update_node') {
@@ -2760,6 +2784,7 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
     const project = canvasActiveProject.value;
     if (!project || !project.nodes.length) return;
     if (!win.confirm('确定清空这张画布上的所有内容吗？')) return;
+    for (const node of project.nodes) node.jobId = '';
     project.nodes.splice(0);
     project.edges.splice(0);
     canvasState.selectedId = '';
@@ -2821,6 +2846,7 @@ export function createCanvasRuntime({ api, config = {}, options = {}, desktop = 
     canvasCreateProject,
     canvasOpenProject,
     canvasBackToLibrary,
+    canvasStopTimelinePlayback,
     canvasDeleteProject,
     canvasDuplicateProject,
     canvasRenameProject,

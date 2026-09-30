@@ -10,7 +10,6 @@ export function createCommandPaletteRuntime({ reactive, computed, globals, helpe
       { key: 'view:projects', icon: 'Folder', label: '项目控制台', hint: '视图', keywords: 'projects xiangmu 项目', run: () => helpers.setView('projects') },
       { key: 'view:novel', icon: 'EditPen', label: '写小说', hint: '视图', keywords: 'novel xiaoshuo 小说', run: () => helpers.setView('novel') },
       { key: 'view:cover', icon: 'Picture', label: '封面生成', hint: '视图', keywords: 'cover fengmian 封面 生图', run: () => helpers.setView('cover') },
-      { key: 'view:animation', icon: 'VideoCamera', label: '动画制作台', hint: '视图', keywords: 'animation donghua 动画 分镜 时间轴', run: () => helpers.setView('animation') },
       { key: 'view:tasks', icon: 'List', label: '任务中心', hint: '视图', keywords: 'tasks renwu 任务', run: () => helpers.setView('tasks') },
       { key: 'view:settings', icon: 'Setting', label: '设置 · 模型与偏好', hint: '视图', keywords: 'settings shezhi 设置 模型', run: () => helpers.setView('settings') },
       { key: 'act:agent', icon: 'Operation', label: '打开 Agent 控制台', hint: '动作', keywords: 'agent zhineng 控制台', run: () => helpers.openAgent() },

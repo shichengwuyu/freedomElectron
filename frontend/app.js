@@ -705,6 +705,9 @@ const App = {
       if (view.value === 'workspace' && projectId) captureWorkspacePosition(projectId);
     });
     watch(view, (nextView, previousView) => {
+      // 画布是「park 不卸载」的：离开画布时必须停掉时间轴的 requestAnimationFrame，
+      // 否则它会在后台一直重绘；同时停掉画布上的任务轮询写回。
+      if (previousView === 'canvas' && nextView !== 'canvas') canvasRuntime.canvasStopTimelinePlayback?.();
       const projectId = workspaceScrollKey();
       if (previousView === 'workspace' && nextView !== 'workspace' && projectId) {
         if (workspaceScrollCapturedForNavigation !== projectId) captureWorkspacePosition(projectId);

@@ -1674,7 +1674,11 @@ export async function runAgentSimpleAction(action = {}, handlers = {}) {
 export async function runAgentNavigationAction(action = {}, handlers = {}) {
   switch (action?.type) {
     case 'set_view': {
+      const allowedViews = ['projects', 'workspace', 'novel', 'canvas', 'cover', 'split', 'tasks', 'settings', 'chat'];
       const nextView = action.view || handlers.currentView?.();
+      if (!nextView || !allowedViews.includes(nextView)) {
+        return { ok: false, message: `未知视图，已忽略：${action.view ?? '(空)'}` };
+      }
       handlers.setView?.(nextView);
       return { ok: true, message: `切换到 ${nextView}` };
     }

@@ -1,6 +1,6 @@
 export const canvasView = /* html */ `
         <template v-if="view === 'canvas' || canvasMounted">
-          <section v-if="canvasLibrary.screen === 'library'" :class="['page page--canvas-library', { 'is-parked': view !== 'canvas' }]">
+          <section v-if="canvasLibrary.screen === 'library'" :class="['page page--canvas-library', 'canvas-library-view', { 'is-parked': view !== 'canvas' }]">
             <header class="page-head canvas-library-head">
               <div class="page-head-copy">
                 <div class="eyebrow">Freedom · Creative Space</div>

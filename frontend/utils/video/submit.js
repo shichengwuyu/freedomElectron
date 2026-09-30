@@ -1297,7 +1297,13 @@ export function createPendingPollController({ intervalMs = 15000, timer = {}, ha
     inFlight = true;
     let result;
     try { result = handlers.poll(); } catch { inFlight = false; return; }
-    Promise.resolve(result).catch(() => {}).finally(() => { inFlight = false; });
+    Promise.resolve(result)
+      .catch((error) => {
+        // 别静默吞掉：否则轮询一旦开始报错，视频状态会永远停在旧值、界面上毫无提示。
+        if (typeof handlers.onError === 'function') handlers.onError(error);
+        else console.warn('[video] 状态轮询失败：', error?.message || error);
+      })
+      .finally(() => { inFlight = false; });
   };
   return {
     isRunning: () => !!getTimer(),
