@@ -38,6 +38,7 @@ desktop.ini
 # ---------- 授权服务端（私钥与账号数据绝不能入库） ----------
 license-server/keys/
 license-server/data/
+license-server/dist/
 
 # ---------- 本地环境与密钥 ----------
 .env
