@@ -608,16 +608,16 @@ export function createLicenseManager(options = {}) {
     return { ok: true, record, verified };
   }
 
-  async function register({ username, password, activationCode = '' } = {}) {
+  // 只保留账号注册：卡密/激活码那条路已经删除（含 redeem）。
+  // 新账号注册后进入待审核列表，由管理员在服务端批准。
+  async function register({ username, password } = {}) {
     const normalizedUsername = String(username || '').trim();
     const usernameLength = Array.from(normalizedUsername).length;
     if (usernameLength < 1 || usernameLength > 64) return failure('VALIDATION_ERROR', '用户名必须为 1-64 个字符。');
     if (typeof password !== 'string' || password.length < 5 || password.length > 128) return failure('VALIDATION_ERROR', '密码必须为 5-128 个字符。');
-    const normalizedCode = String(activationCode || '').trim().toUpperCase();
     const response = await post('/v1/accounts/register', {
       username: normalizedUsername,
       password,
-      ...(normalizedCode ? { activationCode: normalizedCode } : {}),
     });
     if (!response.ok) return response;
     const account = response.body?.data || response.body;
@@ -627,20 +627,6 @@ export function createLicenseManager(options = {}) {
       state: 'pending',
       account,
     };
-  }
-
-  async function redeem({ username, password, activationCode } = {}) {
-    const normalizedUsername = String(username || '').trim();
-    const normalizedCode = String(activationCode || '').trim().toUpperCase();
-    if (!normalizedUsername || typeof password !== 'string') return failure('INVALID_CREDENTIALS');
-    if (!normalizedCode) return failure('ACTIVATION_CODE_INVALID');
-    const response = await post('/v1/accounts/redeem', {
-      username: normalizedUsername,
-      password,
-      activationCode: normalizedCode,
-    });
-    if (!response.ok) return response;
-    return login({ username: normalizedUsername, password });
   }
 
   async function login({ username, password } = {}) {
@@ -752,7 +738,7 @@ export function createLicenseManager(options = {}) {
     return online;
   }
 
-  return { register, redeem, login, validate, readLicense };
+  return { register, login, validate, readLicense };
 }
 
 let defaultManager;
@@ -762,22 +748,15 @@ function manager() {
 }
 
 export async function registerAccount(credentials) {
-  // Patched: 本地授权已放行，直接返回成功
-  return { ok: true, state: 'online', code: 'OK', error: '' };
+  return manager().register(credentials);
 }
 
 export async function loginAccount(credentials) {
-  // Patched: 本地授权已放行，直接返回成功，避免 45 秒网络超时
-  return { ok: true, state: 'online', code: 'OK', error: '' };
-}
-
-export async function redeemAccount(credentials) {
-  // Patched: 本地授权已放行，直接返回成功
-  return { ok: true, state: 'online', code: 'OK', error: '' };
+  return manager().login(credentials);
 }
 
 export async function validateLicense(options) {
-  return { ok: true, state: 'online', expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), license: null };
+  return manager().validate(options);
 }
 
 export async function isActivated() {

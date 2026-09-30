@@ -3,10 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('license', {
   getMachineCode: () => ipcRenderer.invoke('license:getMachineCode'),
-  login: () => ipcRenderer.invoke('license:login', { username: 'freedom', password: 'freedom', activationCode: '' }),
-  redeem: () => ipcRenderer.invoke('license:redeem', { username: 'freedom', password: 'freedom', activationCode: 'FREEDOM' }),
-  register: () => ipcRenderer.invoke('license:register', { username: 'freedom', password: 'freedom', activationCode: '' }),
-  status: () => Promise.resolve({ ok: true, code: 'OK', error: '' }),
+  // 透传界面上真实填写的凭据（此前这里写死了 freedom/freedom，等于绕过登录）。
+  login: (credentials) => ipcRenderer.invoke('license:login', credentials || {}),
+  register: (credentials) => ipcRenderer.invoke('license:register', credentials || {}),
+  status: () => ipcRenderer.invoke('license:status'),
 });
 
 contextBridge.exposeInMainWorld('softwareUpdate', {

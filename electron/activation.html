@@ -131,13 +131,12 @@
       <section class="auth-panel">
         <div class="panel-head">
           <div><div class="panel-kicker">WELCOME / Freedom</div><h1 class="mode-title" id="modeTitle">欢迎回来</h1><div class="mode-copy" id="modeCopy">登录以继续你的创作之旅</div></div>
-          <div class="tabs"><button class="tab active" id="loginTab" type="button">登录</button><button class="tab" id="registerTab" type="button">注册</button><button class="tab" id="activateTab" type="button">激活</button></div>
+          <div class="tabs"><button class="tab active" id="loginTab" type="button">登录</button><button class="tab" id="registerTab" type="button">注册</button></div>
         </div>
         <form class="form" id="accountForm">
           <label class="field"><span class="field-line"><span class="field-label">用户名</span><span class="field-index">01 / USER</span></span><span class="input-wrap"><input class="input" id="username" maxlength="64" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="输入用户名" /></span></label>
           <label class="field"><span class="field-line"><span class="field-label">密码</span><span class="field-index">02 / PASS</span></span><span class="input-wrap"><input class="input password" id="password" type="password" minlength="5" maxlength="128" autocomplete="current-password" placeholder="至少 5 个字符" /><button class="reveal" id="revealPassword" type="button">显示</button></span></label>
           <label class="field hidden" id="confirmField"><span class="field-line"><span class="field-label">确认密码</span><span class="field-index">03 / VERIFY</span></span><span class="input-wrap"><input class="input password" id="confirmPassword" type="password" minlength="5" maxlength="128" autocomplete="new-password" placeholder="再次输入密码" /><button class="reveal" id="revealConfirm" type="button">显示</button></span></label>
-          <label class="field hidden" id="activationCodeField"><span class="field-line"><span class="field-label">试用卡 / 激活码</span><span class="field-index">04 / CODE</span></span><span class="input-wrap"><input class="input" id="activationCode" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="YZ-TRY 或 YZ-ACT 开头" /></span></label>
           <div class="session-row"><span class="session-check">✓</span><span>此设备保持登录</span><span class="session-note">不保存密码</span></div>
           <button class="submit" id="submitBtn" type="submit">登 录</button>
           <div class="message" id="msg" role="status" aria-live="polite">正在检查账号状态...</div>
@@ -251,19 +250,16 @@
     function setMode(next) {
       mode = next;
       const registering = next === 'register';
-      const activating = next === 'activate';
       $('shell').dataset.mode = next;
-      $('shell').classList.toggle('registering', registering || activating);
+      $('shell').classList.toggle('registering', registering);
       $('loginTab').classList.toggle('active', next === 'login');
       $('registerTab').classList.toggle('active', registering);
-      $('activateTab').classList.toggle('active', activating);
       $('confirmField').classList.toggle('hidden', !registering);
-      $('activationCodeField').classList.toggle('hidden', !(registering || activating));
-      $('modeTitle').textContent = registering ? '创建账号' : activating ? '卡密激活' : '欢迎回来';
-      $('modeCopy').textContent = registering ? '有卡密可直接激活，没有则进入公共待审核列表' : activating ? '待审核账号可用试用卡或激活码立即开通' : '登录以继续你的创作之旅';
-      $('submitBtn').textContent = registering ? '提 交 注 册' : activating ? '立 即 激 活' : '登 录';
+      $('modeTitle').textContent = registering ? '创建账号' : '欢迎回来';
+      $('modeCopy').textContent = registering ? '注册后等待管理员审核，通过即可登录' : '登录以继续你的创作之旅';
+      $('submitBtn').textContent = registering ? '提 交 注 册' : '登 录';
       $('password').autocomplete = registering ? 'new-password' : 'current-password';
-      showMsg(registering ? '激活码选填；不填写时注册后等待手动批准。' : activating ? '每个试用卡或激活码只能使用一次。' : '请输入已审核账号的用户名和密码。');
+      showMsg(registering ? '提交后进入待审核列表，管理员通过后即可登录。' : '请输入已审核账号的用户名和密码。');
     }
 
     function togglePassword(inputId, buttonId) {
@@ -285,34 +281,41 @@
     }
 
     function setDisabled(value) {
-      for (const id of ['username', 'password', 'confirmPassword', 'activationCode', 'submitBtn', 'loginTab', 'registerTab', 'activateTab', 'revealPassword', 'revealConfirm']) $(id).disabled = value;
+      for (const id of ['username', 'password', 'confirmPassword', 'submitBtn', 'loginTab', 'registerTab', 'revealPassword', 'revealConfirm']) $(id).disabled = value;
     }
 
     async function submit() {
       const username = $('username').value.trim();
       const password = $('password').value;
-      const activationCode = $('activationCode').value.trim().toUpperCase();
       if (!username) { showMsg('请输入用户名。', 'err'); $('username').focus(); return; }
       if (password.length < 5) { showMsg('密码至少需要 5 个字符。', 'err'); $('password').focus(); return; }
       if (mode === 'register' && password !== $('confirmPassword').value) { showMsg('两次输入的密码不一致。', 'err'); $('confirmPassword').focus(); return; }
-      if (mode === 'activate' && !activationCode) { showMsg('请输入试用卡或激活码。', 'err'); $('activationCode').focus(); return; }
       setDisabled(true);
-      showMsg('正在验证账号...');
+      showMsg(mode === 'register' ? '正在创建账号...' : '正在验证账号...');
       try {
-        // Patched: 本地授权已放行，直接调用一次 login 走通流程，由 main.js 决定是否进入主界面
-        const credentials = { username: username || 'freedom', password: password || 'freedom', activationCode };
-        await window.license.login(credentials);
-        // 即便后端返回失败也不再阻挡进入
+        const credentials = { username, password };
+        const result = mode === 'register'
+          ? await window.license.register(credentials)
+          : await window.license.login(credentials);
+        if (!result?.ok) {
+          setDisabled(false);
+          if (result?.state === 'pending') {
+            showMsg('注册成功，账号正在等待管理员审核。通过后即可登录。', 'ok');
+          } else {
+            showMsg(result?.error || '验证失败，请检查用户名和密码后重试。', 'err');
+          }
+          return;
+        }
+        // 成功后由主进程打开主界面并关闭本窗口。
         showMsg('验证成功，正在进入 Freedom...', 'ok');
       } catch (error) {
-        // 静默忽略，进入主流程由 main.js 接管
-        showMsg('验证成功，正在进入 Freedom...', 'ok');
+        setDisabled(false);
+        showMsg(error?.message || '无法连接授权服务器，请检查网络后重试。', 'err');
       }
     }
 
     $('loginTab').addEventListener('click', () => setMode('login'));
     $('registerTab').addEventListener('click', () => setMode('register'));
-    $('activateTab').addEventListener('click', () => setMode('activate'));
     $('revealPassword').addEventListener('click', () => togglePassword('password', 'revealPassword'));
     $('revealConfirm').addEventListener('click', () => togglePassword('confirmPassword', 'revealConfirm'));
     $('accountForm').addEventListener('submit', (event) => { event.preventDefault(); submit(); });

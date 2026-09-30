@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import updaterPackage from 'electron-updater';
 import { backupStorageForUpdate, DATA_DIR, ELECTRON_DATA_DIR, INSTALL_DIR, loadConfig, LOG_DIR, STATE_DIR, TEMP_DIR, USER_APP_DIR } from '../backend/config.js';
 import { videoDiskPath } from '../backend/videoFunctions.js';
-import { getMachineCode, loginAccount, redeemAccount, registerAccount, validateLicense } from '../backend/license.js';
+import { getMachineCode, loginAccount, registerAccount, validateLicense } from '../backend/license.js';
 import { logger } from '../backend/logger.js';
 import { createSoftwareUpdater } from './softwareUpdater.js';
 
@@ -518,8 +518,8 @@ async function lockApplicationForLicense(result) {
   for (const window of [...mainWindows]) {
     if (!window.isDestroyed()) window.destroy();
   }
-  // Patched: 授权已通过本地放行，不再唤起激活窗口
-  isLicenseLocked = false;
+  // 授权无效 → 关掉主界面，退回账号窗口重新登录。
+  createActivationWindow();
 }
 
 async function revalidateRuntimeLicense({ force = false, retried = false } = {}) {
@@ -541,9 +541,8 @@ async function revalidateRuntimeLicense({ force = false, retried = false } = {})
     licenseRevalidationPromise = null;
   }
   if (!result.ok) {
-    // Patched: 本地授权已放行，永远不再锁应用
-    lastLicenseStatus = { ok: true, code: 'OK', error: '' };
-    return lastLicenseStatus;
+    // 到期 / 吊销 / 设备不匹配 / 离线宽限用尽 → 退回账号窗口。
+    await lockApplicationForLicense(result);
   }
   return result;
 }
@@ -775,16 +774,16 @@ ipcMain.on('app:agent-notify', (event, payload = {}) => {
 ipcMain.handle('license:getMachineCode', () => getMachineCode());
 ipcMain.handle('license:status', () => lastLicenseStatus);
 async function finishAccountAccess(result) {
-  // Patched: 本地放行，不论 result.ok 是否为 true，都允许进入主界面
-  const patchedResult = result?.ok ? result : { ok: true, state: 'online', code: 'OK' };
-  lastLicenseStatus = patchedResult;
+  // 登录/注册失败时把结果原样交回窗口显示，不进入主界面。
+  if (!result?.ok) return result;
+  lastLicenseStatus = result;
   lastLicenseValidationAt = Date.now();
   isLicenseLocked = false;
   await launchMainApp();
   const toClose = activationWindow;
   activationWindow = null;
   if (toClose && !toClose.isDestroyed()) toClose.close();
-  return patchedResult;
+  return result;
 }
 
 async function completeAccountAccess(accessor, credentials) {
@@ -792,18 +791,33 @@ async function completeAccountAccess(accessor, credentials) {
 }
 
 ipcMain.handle('license:login', (_event, credentials) => completeAccountAccess(loginAccount, credentials));
-ipcMain.handle('license:redeem', (_event, credentials) => completeAccountAccess(redeemAccount, credentials));
 ipcMain.handle('license:register', async (_event, credentials) => {
   const result = await registerAccount(credentials);
   return result.ok && result.state === 'online' ? finishAccountAccess(result) : result;
 });
 
+// 仅开发构建（未打包）生效的本地放行开关，避免开发/调试时被授权挡在外面。
+// 安装包里 app.isPackaged === true，所以这个后门不会跟着发出去。
+function isDevLicenseBypass() {
+  return !app.isPackaged && String(process.env.GG_LICENSE_BYPASS || '') === '1';
+}
+
 async function boot() {
   lastLicenseStatus = await validateLicense();
   lastLicenseValidationAt = Date.now();
-  // Patched: 本地授权已放行，永远进入主界面
-  isLicenseLocked = false;
-  await launchMainApp();
+  if (isDevLicenseBypass()) {
+    console.warn('[license] GG_LICENSE_BYPASS=1（仅开发构建）：跳过授权校验');
+    isLicenseLocked = false;
+    await launchMainApp();
+    return;
+  }
+  if (lastLicenseStatus.ok) {
+    isLicenseLocked = false;
+    await launchMainApp();
+    return;
+  }
+  // 没有有效授权 → 先显示账号窗口（登录 / 注册），登录成功后由 finishAccountAccess 进主界面。
+  await lockApplicationForLicense(lastLicenseStatus);
 }
 
 app.whenReady().then(async () => {

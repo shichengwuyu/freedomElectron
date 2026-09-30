@@ -35,9 +35,17 @@ desktop.ini
 .idea/
 .vscode/
 
+# ---------- 授权服务端（私钥与账号数据绝不能入库） ----------
+license-server/keys/
+license-server/data/
+
 # ---------- 本地环境与密钥 ----------
 .env
 .env.*
 *.local
 *.pem
 *.key
+
+# 例外：授权「公钥」必须随客户端分发（它不是秘密，客户端靠它验签租约）。
+# 私钥在 license-server/keys/（已忽略），永远不要提交。
+!backend/license-public-key.pem
