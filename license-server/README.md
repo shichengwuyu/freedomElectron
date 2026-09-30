@@ -35,66 +35,63 @@ node license-server/server.mjs
 curl http://127.0.0.1:8787/health
 ```
 
-## 部署到服务器（以 103.85.226.4 / xiaoyxiao.xyz 为例）
+## 当前部署（已上线）
 
-客户端**强制 HTTPS**（`license.js` 要求协议是 `https:`），所以必须挂证书。推荐让 Node 只监听本机，
-前面用 nginx 做 TLS 终止。
+服务已经部署在 **103.85.226.4**，通过 nginx **子路径**对外，复用该域名现成的 Let's Encrypt 证书：
 
-1. **DNS**：把 `xiaoyxiao.xyz` 的 A 记录指到 `103.85.226.4`。
-2. **上传**：把整个 `license-server/`（含 `keys/license-private.pem`）传到服务器，例如 `/opt/freedom-license`。
-3. **防火墙/安全组**：放行 80 和 443（注意控制台里安全组要挂上，否则公网访问不到）。
-4. **Node 18+**，然后先用 systemd 把服务跑起来：
-
-```ini
-# /etc/systemd/system/freedom-license.service
-[Unit]
-Description=Freedom License Server
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=/opt/freedom-license
-ExecStart=/usr/bin/node /opt/freedom-license/server.mjs
-Restart=always
-RestartSec=3
-User=freedom
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
+```
+客户端 serverUrl : https://xiaoyxiao.xyz/license
+       ↓ nginx   location ^~ /license/  →  proxy_pass http://127.0.0.1:8787/
+容器              freedom-license (node:22-alpine, 只发布 127.0.0.1:8787)
+代码/私钥/账号库   /root/freedom-license  (挂载进容器 /app)
 ```
 
-5. **nginx + 免费证书**：
+选子路径而不是新域名，是为了**不动 `xiaoyxiao.xyz` 上现有的 `location /`**
+（那台机器上还跑着另一个 Go 服务和 new-api，走 3000 / 3001）。
+`/health` 自检：`https://xiaoyxiao.xyz/license/health`。
 
-```nginx
-server {
-  listen 80;
-  server_name xiaoyxiao.xyz;
-  location / { proxy_pass http://127.0.0.1:8787; proxy_set_header Host $host; }
-}
-```
+### 重新部署 / 更新代码
 
 ```bash
-apt install -y nginx certbot python3-certbot-nginx
-certbot --nginx -d xiaoyxiao.xyz      # 自动签证书并改写成 443
+# 本地：把改动传上去（不要漏 keys/）
+scp -r license-server/* root@103.85.226.4:/root/freedom-license/
+
+# 服务器：重启容器
+docker restart freedom-license
+docker logs --tail 20 freedom-license
 ```
 
-证书自动续期由 certbot 的 timer 负责。签完 `curl https://xiaoyxiao.xyz/health` 应该返回 JSON。
+容器是 `--restart unless-stopped`，服务器重启会自动拉起，**不需要 systemd**。
 
-6. 客户端侧的 `backend/license-config.json` 里 `serverUrl` 已经是 `https://xiaoyxiao.xyz`，
-   重新打包客户端即可生效。
+### 首次部署到新机器
+
+1. 上传 `license-server/`（含 `keys/license-private.pem`，并 `chmod 600` 它）。
+2. `docker run -d --name freedom-license --restart unless-stopped -p 127.0.0.1:8787:8787 -v /root/freedom-license:/app -w /app node:22-alpine node server.mjs`
+3. nginx 里给对应域名的 **443 server 块**加一段（**注意别动 `location /`**）：
+   ```nginx
+   location ^~ /license/ {
+       proxy_pass http://127.0.0.1:8787/;   # 末尾的 / 会把 /license/ 前缀去掉
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-Proto https;
+   }
+   ```
+4. `nginx -t && nginx -s reload`
+5. 客户端 `backend/license-config.json` 的 `serverUrl` 填 `https://<域名>/license`，重新打包。
 
 ## 管理账号
 
+容器里跑（或本地对同一份库跑）：
+
 ```bash
-node admin.mjs list                          # 列出账号
-node admin.mjs approve <用户名>               # 批准待审核账号
-node admin.mjs revoke <用户名>                # 吊销（客户端下次复验即被锁）
-node admin.mjs restore <用户名>
-node admin.mjs passwd <用户名> <新密码>
-node admin.mjs devices <用户名>               # 看已登记设备
-node admin.mjs forget-device <用户名> <序号>   # 换机时移除旧设备
+docker exec freedom-license node admin.mjs list             # 列出账号
+docker exec freedom-license node admin.mjs approve <用户名>  # 批准待审核账号
+docker exec freedom-license node admin.mjs revoke <用户名>   # 吊销（客户端下次复验即被锁）
+docker exec freedom-license node admin.mjs restore <用户名>
+docker exec freedom-license node admin.mjs delete <用户名>   # 彻底删除
+docker exec freedom-license node admin.mjs passwd <用户名> <新密码>
+docker exec freedom-license node admin.mjs devices <用户名>  # 看已登记设备
+docker exec freedom-license node admin.mjs forget-device <用户名> <序号>   # 换机时移除旧设备
 ```
 
 `config.json` 里的开关：

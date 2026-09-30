@@ -1,5 +1,5 @@
 {
-  "serverUrl": "https://xiaoyxiao.xyz",
+  "serverUrl": "https://xiaoyxiao.xyz/license",
   "issuer": "gg-license-server",
   "audience": "com.gg.studio",
   "requestTimeoutMs": 45000

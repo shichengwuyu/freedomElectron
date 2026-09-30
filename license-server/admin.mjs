@@ -94,6 +94,14 @@ switch (command) {
     });
     break;
   }
+  case 'delete': {
+    const account = requireUser(args[0]);
+    const data = JSON.parse(fs.readFileSync(store.filePath, 'utf8'));
+    data.accounts = data.accounts.filter((item) => item.usernameLower !== account.usernameLower);
+    fs.writeFileSync(store.filePath, JSON.stringify(data, null, 2), { mode: 0o600 });
+    console.log(`已删除账号 ${account.username}（该账号的租约在下次复验时失效）`);
+    break;
+  }
   case 'forget-device': {
     const account = requireUser(args[0]);
     const index = Number(args[1]);
