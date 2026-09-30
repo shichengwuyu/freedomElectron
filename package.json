@@ -10,7 +10,8 @@
   "author": "Freedom",
   "license": "ISC",
   "scripts": {
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "smoke": "node scripts/smoke-test.mjs"
   },
   "build": {
     "appId": "com.xiaoyxiao.freedom",
