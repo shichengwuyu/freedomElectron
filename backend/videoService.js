@@ -106,6 +106,7 @@ import {
 } from './neowowAccounts.js';
 import {
   cleanupSupersededVideoFiles,
+  episodeKeyForPath,
   nextVideoWritePath,
   videoDiskPath,
   videoExists,
@@ -602,7 +603,7 @@ export function reconcileProjectShotVideos(projectId, project) {
 }
 
 export function tailFrameDiskPath(projectId, episodeId, shotNo) {
-  return path.join(projectDir(projectId), 'tailframes', String(episodeId), `${sanitizeFilename(String(shotNo))}.png`);
+  return path.join(projectDir(projectId), 'tailframes', episodeKeyForPath(episodeId), `${sanitizeFilename(String(shotNo))}.png`);
 }
 
 export function tailFrameLocalUrl(projectId, episodeId, shotNo) {

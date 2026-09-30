@@ -993,7 +993,10 @@ export function createTempDir(prefix = 'gg-') {
 
 ensureUserPaths();
 
-export function loadConfig() {
+// withGatewayFallback=false 时不做「用网关令牌兜底填 apiKey」：
+// saveConfig 会从 loadConfig() 取 current 再写盘，若带着兜底值，令牌就会被复制进
+// text/image/video 各渠道的 apiKey 字段并落盘（之后换令牌也清不掉）。
+export function loadConfig({ withGatewayFallback = true } = {}) {
   ensureUserPaths();
   try {
     if (fs.existsSync(CONFIG_PATH)) {
@@ -1077,7 +1080,7 @@ export function loadConfig() {
           liteMode: typeof parsed.performance?.liteMode === 'boolean' ? parsed.performance.liteMode : null,
         },
       };
-      applyGatewayFallback(cfg);
+      if (withGatewayFallback) applyGatewayFallback(cfg);
       stripLegacyVideoConfig(cfg.video);
       return cfg;
     }
@@ -1099,7 +1102,8 @@ export function loadConfig() {
 
 export function saveConfig(cfg) {
   ensureUserPaths();
-  const current = loadConfig();
+  // 不带网关兜底读当前值：否则兜底填进来的令牌会被写进 config.json。
+  const current = loadConfig({ withGatewayFallback: false });
   const dreaminaAgent = normalizeDreaminaAgentAccounts({
     ...current.video,
     ...(cfg.video || {}),

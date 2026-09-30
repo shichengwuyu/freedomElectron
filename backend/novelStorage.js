@@ -25,9 +25,26 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+// 判断当前格式的工作目录里是否已经有作品。用于区分「首次迁移」和「标记文件丢了」。
+function hasExistingWorks() {
+  try {
+    if (!fs.existsSync(WORKS_DIR)) return false;
+    return fs.readdirSync(WORKS_DIR).some((name) => fs.existsSync(path.join(WORKS_DIR, name, 'meta.json')));
+  } catch {
+    return true; // 探测失败也当作「有数据」，宁可少迁移一次，也不能删用户的小说
+  }
+}
+
 function resetLegacyNovelWorkspaceOnce() {
-  const marker = readJsonFile(WORKSPACE_EPOCH_FILE, null);
-  if (Number(marker?.epoch) === WORKSPACE_EPOCH) return;
+  if (fs.existsSync(WORKSPACE_EPOCH_FILE)) {
+    const marker = readJsonFile(WORKSPACE_EPOCH_FILE, null);
+    // 标记存在却读不出来（被占用 / 损坏）时直接放弃：这一步是 rmSync，读失败不能当成「需要迁移」。
+    if (marker == null) return;
+    if (Number(marker.epoch) === WORKSPACE_EPOCH) return;
+  } else if (hasExistingWorks()) {
+    // 标记文件不在了，但 works/ 里还有作品 —— 只是标记丢了，绝不能当成首次迁移把数据删掉。
+    return;
+  }
   ensureDir(NOVEL_DIR);
   fs.rmSync(WORKS_DIR, { recursive: true, force: true });
   fs.rmSync(COVER_DIR, { recursive: true, force: true });

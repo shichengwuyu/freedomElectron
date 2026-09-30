@@ -4,13 +4,26 @@ import path from 'path';
 import { exec } from 'child_process';
 import { projectDir, sanitizeFilename } from './storage.js';
 
+// 集 ID 会被直接拼进磁盘路径（videos/<集>/…），而它来自请求体，必须防路径穿越。
+// 合法值形如 1 / 12 / ep:1 / ch:2，所以只拦「穿越形态」，不做通用转义 ——
+// sanitizeFilename('ep:1') 会得到 'ep_1'，那会让已有视频目录全部对不上。
+export function episodeKeyForPath(episodeId) {
+  const raw = String(episodeId ?? '').trim();
+  if (!raw) throw new Error('缺少集 ID');
+  if (raw.includes('/') || raw.includes('\\') || raw.includes('..') || raw.includes('\u0000')) {
+    throw new Error(`非法的集 ID：${raw}`);
+  }
+  return raw;
+}
+
 // 视频存储路径：data/<projectId>/videos/<episodeId>/<shotNo>.mp4
 export function videoDiskPaths(projectId, episodeId, shotNo) {
   const videoRoot = path.join(projectDir(projectId), 'videos');
+  const episodeKey = episodeKeyForPath(episodeId);
   const safeShotNo = sanitizeFilename(String(shotNo));
   return [
-    path.join(videoRoot, String(episodeId), `${safeShotNo}.mp4`),
-    path.join(videoRoot, `${episodeId}_${safeShotNo}.mp4`),
+    path.join(videoRoot, episodeKey, `${safeShotNo}.mp4`),
+    path.join(videoRoot, `${episodeKey}_${safeShotNo}.mp4`),
   ];
 }
 
@@ -28,7 +41,7 @@ export function introDiskPath(projectId) {
 // 文件名刻意不带镜号 —— 参考视频记录挂在 shotMeta[镜头号] 上，插入/删除镜头时由现有的
 // shotMeta 平移逻辑带着走；磁盘文件按令牌命名，就不需要跟着改名。
 export function shotRefVideoDir(projectId, episodeId) {
-  return path.join(projectDir(projectId), 'shotrefs', String(episodeId));
+  return path.join(projectDir(projectId), 'shotrefs', episodeKeyForPath(episodeId));
 }
 
 export function shotRefVideoDiskPath(projectId, episodeId, token) {
@@ -170,7 +183,7 @@ export function videoExists(projectId, episodeId, shotNo) {
 // 插入/删除分镜时同步移动已落盘的视频文件名，保持镜头号和磁盘文件一致。
 export function shiftVideoFiles(projectId, episodeId, { fromNo, delta, removeNo = null } = {}) {
   const root = path.join(projectDir(projectId), 'videos');
-  const dir = path.join(root, String(episodeId));
+  const dir = path.join(root, episodeKeyForPath(episodeId));
   if (!fs.existsSync(root)) return { shifted: 0, removed: 0 };
 
   let removed = 0;
@@ -342,14 +355,15 @@ export function remapShotFiles(projectId, episodeId, { mapping = {}, removeUnmap
   const normalized = normalizeShotNumberMapping(mapping);
   const projectRoot = projectDir(projectId);
   const videoRoot = path.join(projectRoot, 'videos');
-  const videoDir = path.join(videoRoot, String(episodeId));
-  const tailFrameDir = path.join(projectRoot, 'tailframes', String(episodeId));
+  const episodeKey = episodeKeyForPath(episodeId);
+  const videoDir = path.join(videoRoot, episodeKey);
+  const tailFrameDir = path.join(projectRoot, 'tailframes', episodeKey);
   const modernVideos = remapNumberedMediaFiles(videoDir, normalized, {
     extension: '.mp4',
     removeUnmapped,
   });
   const legacyVideos = remapNumberedMediaFiles(videoRoot, normalized, {
-    prefix: `${episodeId}_`,
+    prefix: `${episodeKey}_`,
     extension: '.mp4',
     removeUnmapped,
   });
@@ -382,7 +396,7 @@ function countFilesRecursive(target) {
 // 删除指定剧集的全部媒体文件，返回删除统计和错误列表。
 export function deleteEpisodeMediaFiles(projectId, episodeId) {
   const projectRoot = projectDir(projectId);
-  const episodeKey = String(episodeId);
+  const episodeKey = episodeKeyForPath(episodeId);
   const safeEpisodeKey = sanitizeFilename(episodeKey, 'ep');
   const videoRoot = path.join(projectRoot, 'videos');
   const targets = [
