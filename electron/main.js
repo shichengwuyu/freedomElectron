@@ -362,12 +362,12 @@ function createActivationWindow() {
     fullscreenable: false,
     title: safeMode ? 'Freedom · 账号访问 · 安全模式' : 'Freedom · 账号访问',
     icon: appIcon(),
-    backgroundColor: '#f6dda2',
+    backgroundColor: '#262626',
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#00000000',
-      symbolColor: '#5f4633',
+      symbolColor: '#e6e6e6',
       height: 36,
     },
     webPreferences: {
