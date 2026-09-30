@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Freedom</title>
+  <script>
+    (() => {
+      const allowed = new Set(['dark', 'light', 'system']);
+      let preference = 'dark';
+      try {
+        const stored = localStorage.getItem('yanzhi-ui-theme');
+        if (allowed.has(stored)) preference = stored;
+      } catch {}
+      const resolved = preference === 'system'
+        ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preference;
+      document.documentElement.dataset.theme = resolved;
+      document.documentElement.dataset.themePreference = preference;
+      document.documentElement.style.colorScheme = ['dark', 'violet'].includes(resolved) ? 'dark' : 'light';
+      window.desktopPetHost?.setTitleBarTheme?.(resolved);
+    })();
+  </script>
+  <link rel="stylesheet" href="vendor/element-plus.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <script>
+    if (window.desktopPetHost) document.documentElement.classList.add('is-electron');
+  </script>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <div id="app"></div>
+
+  <!-- 本地库，零 CDN、零构建 -->
+  <script src="vendor/vue.global.prod.js"></script>
+  <script src="vendor/element-plus.full.min.js"></script>
+  <script src="vendor/lucide-icons.js"></script>
+  <!-- 过渡期兜底：剩余 18 处复杂 el-icon 仍在用 Element Plus 图标，清理后再删 -->
+  <script src="vendor/element-plus-icons.iife.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+

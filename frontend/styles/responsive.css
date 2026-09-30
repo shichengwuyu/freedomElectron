@@ -1,0 +1,167 @@
+/* ---------- 响应式 ---------- */
+@media (min-width: 1041px) and (max-height: 760px) {
+  .side-rail { gap: 9px; padding: 10px 9px; }
+  .rail-brand { gap: 4px; padding-bottom: 8px; }
+  .rail-brand .brand-mark { width: 40px; height: 40px; }
+  .rail-nav, .rail-foot { gap: 2px; }
+  .rail-foot { padding-top: 8px; }
+  .rail-item { gap: 2px; padding: 5px 3px 4px; }
+  .rail-item-icon { width: 32px; height: 32px; font-size: 16px; }
+}
+@media (max-width: 1320px) {
+  .shot-card { grid-template-columns: 18px minmax(0,1.3fr) minmax(280px,1fr); }
+  .task-board { grid-template-columns: 1fr; }
+  .task-status-rail {
+    position: static;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(84px, 1fr);
+    overflow-x: auto;
+  }
+  .task-status-item { flex-direction: column; align-items: center; gap: 2px; padding: 9px 6px; }
+  .task-status-item::before { display: none; }
+  .project-command { grid-template-columns: 1fr; }
+  .command-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .command-stat.is-lead { grid-column: auto; grid-template-columns: 1fr; gap: 3px; }
+  .command-stat.is-lead strong { font-size: 25px; }
+}
+@media (max-width: 1180px) {
+  .topbar-context { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0,1fr)); width: min(340px, 42vw); }
+}
+@media (max-width: 1040px) {
+  /* 侧舱变底部导航条 */
+  .studio-shell { grid-template-columns: 1fr; }
+  .side-rail {
+    position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 60;
+    height: auto;
+    grid-template-rows: none;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-right: none;
+    border-top: 1px solid var(--line-strong);
+    background: rgba(13, 10, 8, .96);
+  }
+  .rail-brand { grid-template-columns: auto; padding: 0; border-bottom: none; }
+  .rail-brand span { display: none; }
+  .rail-nav { grid-auto-flow: column; justify-content: center; gap: 4px; min-width: 0; overflow-x: auto; }
+  .rail-foot { padding-top: 0; border-top: none; }
+  .rail-item { padding: 5px 8px; }
+  .rail-item-icon { width: 34px; height: 34px; font-size: 16px; }
+  .rail-item-label { font-size: 10px; }
+  .rail-item.active::before { display: none; }
+  .content-stage { padding-bottom: 110px; }
+  .studio-shell.is-workspace .content-stage { padding-bottom: 110px; }
+  /* 舵轮改成侧边贴边后不再压底部导航条，只需稍微上提避开它的视觉重心 */
+  .shot-jump-dock { top: 42%; }
+
+  .studio-topbar { position: static; flex-wrap: wrap; }
+  .topbar-context { width: 100%; grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .project-command, .workspace-command, .project-stage-toolbar, .section-bar { align-items: flex-start; flex-direction: column; }
+  .project-command { display: grid; }
+  .workspace-command .command-metrics, .settings-layout { grid-template-columns: 1fr; }
+  .workspace-flow { position: static; grid-template-columns: 1fr; }
+  .ep-reel-toolbar { align-items: stretch; flex-direction: column; }
+  .cockpit-head { flex-wrap: wrap; }
+  .cockpit-actions { width: 100%; margin-left: 0; }
+  .stage-tabs { position: static; }
+  .pipeline-flow { flex-wrap: wrap; }
+  .pipeline-link { display: none; }
+  .library-bar { align-items: stretch; flex-direction: column; }
+  .library-search { width: 100%; flex: 1; }
+  .settings-nav { position: static; }
+  .settings-nav-group button.active::before { display: none; }
+  .plib-hero { align-items: stretch; flex-direction: column; }
+  .plib-current { flex-basis: auto; width: 100%; }
+  .plib { grid-template-columns: 1fr; min-height: 0; }
+  .plib-aside { min-height: 320px; }
+  .plib-editor-grid { grid-template-columns: 1fr; }
+  .duo-grid { grid-template-columns: 1fr; }
+  .shot-card { grid-template-columns: 1fr; }
+  .shot-slate { display: none; }
+  .shot-video { border-left: none; border-top: 1px solid var(--line); }
+  .shot-head { flex-wrap: wrap; overflow-x: visible; }
+  .shot-video-settings, .shot-video-settings.has-account-and-model { grid-template-columns: 1fr; align-items: stretch; }
+  .subtitle-removal-body { grid-template-columns: 1fr; }
+  .subtitle-removal-footer { align-items: stretch; flex-direction: column; }
+  .subtitle-removal-modes { align-items: stretch; flex-direction: column; }
+  .subtitle-removal-modes .el-segmented { width: 100%; }
+  .subtitle-removal-actions { justify-content: stretch; }
+  .subtitle-removal-actions .el-button { flex: 1; }
+  .agent-main { grid-template-columns: 1fr; }
+  .agent-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(180px, .7fr);
+    border-left: none; border-top: 1px solid var(--line);
+  }
+  .agent-source { border-right: 1px solid var(--line); }
+  .agent-log { grid-column: 1 / -1; max-height: 220px; }
+  .task-row { flex-direction: column; }
+  .task-actions { justify-content: flex-start; }
+  .diagnostics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .command-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 触屏上常显海报操作 */
+  .poster-quick { opacity: 1; transform: none; }
+}
+@media (max-width: 700px) {
+  .side-rail { grid-template-columns: 1fr; gap: 0; }
+  .side-rail .rail-brand, .side-rail .rail-foot { display: none; }
+  .side-rail .rail-nav { width: 100%; grid-auto-columns: minmax(44px, 1fr); justify-content: stretch; gap: 2px; }
+  .side-rail .rail-item { min-width: 0; padding: 4px 2px; }
+  .studio-topbar { padding: 12px; }
+  .content-stage, .studio-shell.is-workspace .content-stage { padding: 14px; padding-bottom: 110px; }
+  .create-box, .sub-card { grid-template-columns: 1fr; }
+  .overview-strip, .workspace-command .command-metrics, .topbar-context { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .topbar-actions { width: 100%; }
+  .settings-detail { padding: 16px; }
+  .settings-detail, .video-provider-panel { min-width: 0; }
+  .video-provider-panel { padding-inline: 14px; }
+  .video-provider-panel-head { flex-direction: column; gap: 8px; }
+  .video-provider-panel .inline-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .video-provider-panel .inline-actions .el-select,
+  .video-provider-panel .inline-actions .el-input,
+  .video-provider-panel .inline-actions .el-button { width: 100% !important; margin-left: 0; }
+  .video-common-settings { grid-template-columns: minmax(0, 1fr); }
+  .plib-current { grid-template-columns: 1fr; }
+  .prompt-status-chip { max-width: none; }
+  .plib-hero h2 { font-size: 24px; }
+  .plib-aside { min-height: 300px; }
+  .plib-actions, .plib-empty-actions { flex-direction: column; align-items: stretch; }
+  .plib-usage { align-items: flex-start; flex-direction: column; }
+  .plib-usage .inline-actions { width: 100%; }
+  .plib-usage .el-button { width: 100%; }
+  .duo-text, .duo-col .el-textarea__inner { min-height: 240px; }
+  .agent-drawer .el-drawer__header { padding: 14px 16px; }
+  .agent-drawer .el-drawer__body { overflow: auto; }
+  .agent-shell { height: auto; min-height: 100%; grid-template-rows: auto auto auto auto; }
+  .agent-status { grid-template-columns: 1fr; padding: 12px 14px; }
+  .agent-status-metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .agent-main { grid-template-rows: minmax(280px, auto) auto; }
+  .agent-chat-panel { min-height: 280px; }
+  .agent-rail { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(180px, auto); }
+  .agent-source { border-right: none; }
+  .agent-log { grid-column: auto; max-height: none; min-height: 180px; }
+  .agent-log-list { max-height: 220px; }
+  .agent-chat { padding: 14px; }
+  .agent-input { grid-template-columns: 1fr; }
+  .agent-composer-side { grid-template-rows: 44px auto; }
+  .agent-composer-side .el-button { min-height: 44px; }
+  .tail-frame-name-row { grid-template-columns: 1fr; gap: 6px; }
+  .tail-frame-controls { grid-template-columns: 1fr; gap: 8px; }
+  .backup-actions, .trash-project-row, .snapshot-row { align-items: stretch; flex-direction: column; }
+  .trash-project-actions, .trash-project-actions .el-button, .snapshot-row .el-button { width: 100%; }
+  .trash-project-actions { flex-direction: column; }
+  .poster-grid { grid-template-columns: 1fr; }
+  .command-copy h2 { font-size: 27px; }
+  .command-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .system-settings-grid, .diagnostics-grid, .element-prompt-grid { grid-template-columns: 1fr; }
+  .task-row { flex-direction: column; }
+  .task-actions { justify-content: flex-start; }
+}
+@media (max-width: 500px) {
+  .cmdk-trigger > span { display: none; }
+  .cmdk-trigger { flex: 0 0 auto; gap: 6px; padding-inline: 9px; }
+}

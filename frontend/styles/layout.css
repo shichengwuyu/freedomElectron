@@ -1,0 +1,187 @@
+/* ============================================================
+   Freedom · 视口锁定布局（整页不滚，滚动只发生在「小组件」内）
+   规则：除「项目内的分镜页」外，页面本身不滚动；
+        放不下的内容收进 .panel（小组件），滚动条只出现在 panel 内部。
+   注意：分镜页依赖 window 层滚动，所以下面的规则都用 :has() 限定，
+        不触碰 .studio-main 的全局行为。
+   ============================================================ */
+
+/* ---------- 通用骨架（新页面按此结构搭） ----------
+   .page        flex 纵向、撑满可用高度、overflow:hidden
+   .page-head   固定页头（标题 + 右侧操作）
+   .page-body   1fr，min-height:0 是关键，否则子项撑不出滚动容器
+   .panel       小组件：卡片 + 头部固定 + body 内部滚
+------------------------------------------------------------ */
+.page {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.page-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.page-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.panel-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.panel-body--pad { padding: 18px; }
+.page-body > .panel { flex: 1 1 0; min-width: 0; }
+
+/* 页面头：eyebrow + 标题 + 副标题 + 右侧操作（沉浸页自带，标准页用顶栏） */
+.page-head-copy { display: grid; gap: 3px; min-width: 0; }
+.page-head-copy .eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-2); }
+.page-head-copy h1 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; color: var(--ink); }
+.page-head-copy p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.page-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* 等宽 KPI 小卡（取代错落的 command-stat） */
+.stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.stat-tile {
+  display: grid; gap: 6px; min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.stat-tile strong { color: var(--ink); font-size: 22px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat-tile span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.stat-tile.is-accent { border-color: color-mix(in srgb, var(--gold) 32%, var(--line)); }
+.stat-tile.is-accent strong { color: var(--gold-hot); }
+
+/* 面板内的工具条 */
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.toolbar-spacer { flex: 1 1 auto; }
+
+/* ---------- 统一分段切换（全站同一套外观，替代各处自制的 tab 条） ---------- */
+.project-library-tabs,
+.chat-status-tabs,
+.canvas-asset-filters,
+.novel-workspace-switch,
+.shot-attention-filter,
+.desk-panel-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.project-library-tabs > button,
+.chat-status-tabs > button,
+.canvas-asset-filters > button,
+.novel-workspace-switch > button,
+.shot-attention-filter > button,
+.desk-panel-tabs > button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: color .15s, background .15s;
+}
+.project-library-tabs > button:hover,
+.chat-status-tabs > button:hover,
+.canvas-asset-filters > button:hover,
+.novel-workspace-switch > button:hover,
+.shot-attention-filter > button:hover,
+.desk-panel-tabs > button:hover { color: var(--ink); background: var(--surface-3); }
+.project-library-tabs > button.active,
+.chat-status-tabs > button.active,
+.canvas-asset-filters > button.active,
+.novel-workspace-switch > button.active,
+.shot-attention-filter > button.active,
+.desk-panel-tabs > button.active {
+  color: var(--gold-ink);
+  background: var(--grad-gold);
+  border-color: transparent;
+}
+
+/* ---------- 整页锁定（view 驱动；分镜页不使用，保留窗口滚动） ---------- */
+.studio-shell.is-page-locked .studio-main {
+  height: calc(100vh - var(--desktop-titlebar-height));
+  overflow: hidden;
+}
+.studio-shell.is-page-locked .content-stage {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 设置页：左右两栏各自内部滚 ---------- */
+.studio-shell:has(.settings-layout) .settings-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  overflow: hidden;
+}
+/* 侧栏：独立滚动容器，本身不再 sticky */
+.studio-shell:has(.settings-layout) .settings-nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: static;
+  padding-right: 4px;
+}
+/* 详情列：整列不滚，滚动只发生在 .panel-body 内部 */
+.studio-shell:has(.settings-layout) .settings-detail {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+.studio-shell:has(.settings-layout) .settings-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}

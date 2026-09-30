@@ -1,0 +1,19 @@
+@import './styles/base.css';
+@import './styles/storyboard.css';
+@import './styles/canvas.css';
+@import './styles/elements-drawer.css';
+@import './styles/character-library.css';
+@import './styles/settings.css';
+@import './styles/quality.css';
+@import './styles/agent.css';
+@import './styles/responsive.css';
+@import './styles/novel.css';
+@import './styles/cover-studio.css';
+@import './styles/video-split.css';
+@import './styles/legal-agreement.css';
+
+@import './styles/chat.css';
+@import './styles/themes.css';
+@import './styles/tokens.css';
+@import './styles/shell.css';
+@import './styles/layout.css';

@@ -1,0 +1,43 @@
+# ---------- 依赖 ----------
+node_modules/
+
+# ---------- 打包产物 / 安装包 ----------
+release/
+release-2/
+release-3/
+release-build/
+dist/
+out/
+
+# ---------- 随包二进制（体积 >100MB，超出 GitHub 单文件上限；
+#            打包前用 scripts/build-installer.mjs 重新下载/放置） ----------
+vendor/ffmpeg/
+
+# ---------- Agent 运行态（含历史对话、粘贴过的密钥/令牌，务必不要上传） ----------
+.workbuddy/
+.commandcode/
+
+# ---------- 日志与临时文件 ----------
+*.log
+npm-debug.log*
+yarn-error.log*
+tmp/
+*.tmp
+*.bak
+*.bak2
+*.new
+*.orig
+
+# ---------- 系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# ---------- 本地环境与密钥 ----------
+.env
+.env.*
+*.local
+*.pem
+*.key

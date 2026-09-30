@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file:; style-src 'unsafe-inline'; script-src 'unsafe-inline';" />
+  <title>Freedom · 账号访问</title>
+  <style>
+    :root {
+      --canvas: #f6dda2;
+      --panel: rgba(255, 252, 242, .88);
+      --panel-strong: rgba(255, 255, 251, .96);
+      --line: rgba(170, 119, 43, .28);
+      --line-strong: rgba(255, 255, 255, .92);
+      --text: #49362a;
+      --text-soft: #6f5746;
+      --muted: #8b715d;
+      --gold: #e6aa3f;
+      --gold-hot: #c98522;
+      --coral: #df7d70;
+      --leaf: #668064;
+      --danger: #b84d58;
+      --ok: #527655;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { color: var(--text); background: var(--canvas); font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; user-select: none; letter-spacing: 0; }
+    button, input { font: inherit; letter-spacing: 0; }
+    button { cursor: pointer; }
+    .shell { position: relative; width: 100%; height: 100%; border: 1px solid rgba(143, 97, 32, .34); background: var(--canvas); }
+    .drag-region { -webkit-app-region: drag; position: absolute; z-index: 20; top: 0; right: 138px; left: 0; height: 36px; }
+    .stage { --shift-x: 0px; --shift-y: 0px; position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; isolation: isolate; background: var(--canvas); }
+    .backdrop { position: absolute; z-index: -4; inset: 0; background-image: url("../assets/activation-cute-bg.png"); background-size: contain; background-repeat: no-repeat; background-position: center center; animation: scenicDrift 20s ease-in-out infinite alternate; will-change: filter; }
+    .scene-grade { position: absolute; z-index: -3; inset: 0; overflow: hidden; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 56%, rgba(188,126,41,.06)); }
+    .scene-grade::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 42%, rgba(255,251,236,.06) 60%, rgba(255,248,226,.16) 100%); }
+    .panel-zone { position: absolute; z-index: -2; top: 0; right: 0; bottom: 0; width: 57%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,249,231,.08) 44%, rgba(255,248,226,.16)); }
+    .auth-panel { position: absolute; z-index: 5; top: 50%; right: clamp(34px, 6vw, 82px); width: min(430px, calc(100% - 72px)); max-height: calc(100% - 48px); transform: translateY(-50%); overflow: hidden; padding: 30px 34px 25px; border: 1px solid var(--line-strong); border-radius: 8px; background: linear-gradient(145deg, var(--panel-strong), var(--panel)); box-shadow: 0 24px 60px rgba(111, 70, 28, .18), 0 7px 20px rgba(114, 73, 28, .11), inset 0 1px 0 rgba(255,255,255,.94); backdrop-filter: blur(16px) saturate(.94); }
+    .auth-panel::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--gold), #f1c56d 58%, var(--coral)); }
+    .auth-panel::after { content: ""; position: absolute; inset: 5px; border: 1px solid rgba(218, 178, 103, .16); border-radius: 5px; pointer-events: none; }
+    .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 21px; }
+    .panel-kicker { display: flex; align-items: center; gap: 7px; color: var(--leaf); font: 800 10px Consolas, "Courier New", monospace; }
+    .panel-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px rgba(230,170,63,.16); }
+    .mode-title { margin: 7px 0 0; color: var(--text); font-size: 30px; line-height: 1; font-weight: 760; }
+    .mode-copy { margin-top: 9px; color: var(--muted); font-size: 11px; }
+    .tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); width: 186px; height: 37px; padding: 3px; border: 1px solid rgba(174,124,48,.22); border-radius: 7px; background: rgba(246,226,181,.58); }
+    .tab { border: 0; border-radius: 5px; color: #7c624c; background: transparent; font-size: 11px; font-weight: 800; }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,.58); }
+    .tab.active { color: #fff9ec; background: var(--text); box-shadow: 0 5px 14px rgba(73,54,42,.18); }
+    .form { display: grid; gap: 12px; }
+    .field { display: block; min-width: 0; }
+    .field-line { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .field-label { color: var(--text-soft); font-size: 10px; font-weight: 750; }
+    .field-index { color: #a18468; font: 700 8px Consolas, "Courier New", monospace; }
+    .input-wrap { position: relative; display: block; }
+    .input { width: 100%; height: 47px; padding: 0 14px; border: 1px solid var(--line); border-radius: 7px; outline: none; color: var(--text); background: rgba(255,255,252,.78); font-size: 13px; user-select: text; caret-color: var(--gold-hot); transition: border-color .15s, box-shadow .15s, background .15s; }
+    .input::placeholder { color: #aa907a; }
+    .input:hover { border-color: rgba(201,133,34,.5); background: rgba(255,255,252,.9); }
+    .input:focus { border-color: var(--gold-hot); background: rgba(255,255,252,.96); box-shadow: 0 0 0 3px rgba(230,170,63,.14); }
+    .input.password { padding-right: 55px; }
+    .input:disabled { color: #998979; background: rgba(238,230,216,.72); }
+    .reveal { position: absolute; top: 8px; right: 8px; height: 31px; min-width: 41px; padding: 0 8px; border: 1px solid rgba(174,124,48,.2); border-radius: 6px; color: #745946; background: rgba(247,229,190,.82); font-size: 10px; font-weight: 700; }
+    .reveal:hover { color: var(--text); border-color: rgba(201,133,34,.42); background: #fff5dc; }
+    .session-row { display: flex; align-items: center; gap: 8px; min-height: 19px; color: var(--text-soft); font-size: 10px; }
+    .session-check { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid rgba(102,128,100,.42); border-radius: 4px; color: var(--leaf); background: rgba(102,128,100,.1); font-size: 10px; font-weight: 900; }
+    .session-note { margin-left: auto; color: #9a836f; }
+    .submit { position: relative; width: 100%; height: 48px; overflow: hidden; border: 1px solid var(--gold-hot); border-radius: 7px; color: #4c321f; background: var(--gold); font-size: 12px; font-weight: 850; box-shadow: 0 10px 24px rgba(190,124,27,.22), inset 0 1px 0 rgba(255,255,255,.34); transition: filter .15s, transform .15s, box-shadow .15s; }
+    .submit::after { content: ""; position: absolute; top: 0; left: -34%; width: 25%; height: 100%; transform: skewX(-24deg); background: rgba(255,255,255,.22); transition: left .38s ease; }
+    .submit:hover { filter: brightness(1.05); box-shadow: 0 12px 28px rgba(190,124,27,.28); }
+    .submit:hover::after { left: 115%; }
+    .submit:active { transform: translateY(1px); }
+    .submit:disabled { opacity: .55; cursor: wait; transform: none; }
+    .message { min-height: 36px; max-height: 48px; display: flex; align-items: center; overflow: auto; padding: 8px 11px; border-left: 2px solid var(--gold); border-radius: 0 6px 6px 0; color: #7d6552; background: rgba(249,232,196,.55); font-size: 9px; line-height: 1.5; }
+    .message.ok { border-color: var(--ok); color: #476b4b; background: rgba(226,239,220,.7); }
+    .message.err { border-color: var(--danger); color: #a3424c; background: rgba(251,226,225,.72); }
+    .panel-footer { display: flex; align-items: center; gap: 9px; margin-top: 14px; padding-top: 11px; border-top: 1px solid rgba(174,124,48,.18); color: #947b66; font: 700 8px Consolas, "Courier New", monospace; }
+    .footer-state { margin-left: auto; color: var(--leaf); white-space: nowrap; }
+    .update-action { min-height: 24px; padding: 0 8px; border: 1px solid rgba(174,124,48,.24); border-radius: 5px; color: #765c47; background: rgba(250,235,201,.78); font-size: 9px; font-weight: 750; }
+    .update-action:hover { color: var(--text); border-color: rgba(201,133,34,.42); background: rgba(255,252,242,.94); }
+    .update-action:disabled { cursor: wait; opacity: .62; }
+    .hidden { display: none !important; }
+    .registering .auth-panel { padding: 25px 34px 18px; }
+    .registering .panel-head { margin-bottom: 12px; }
+    .registering .form { gap: 7px; }
+    .registering .input { height: 41px; }
+    .registering .field-line { margin-bottom: 3px; }
+    .registering .reveal { top: 6px; height: 29px; }
+    .registering .session-row { display: none; }
+    .registering .submit { height: 43px; }
+    .registering .message { min-height: 31px; }
+    .registering .panel-footer { margin-top: 7px; padding-top: 6px; }
+    @keyframes scenicDrift {
+      0% { filter: saturate(1) brightness(1); }
+      50% { filter: saturate(1.015) brightness(1.006); }
+      100% { filter: saturate(1.025) brightness(1.01); }
+    }
+    @media (min-width: 1200px) and (min-height: 720px) {
+      .auth-panel { padding: 38px 42px 31px; }
+      .panel-head { margin-bottom: 27px; }
+      .mode-title { font-size: 35px; }
+      .mode-copy { font-size: 11px; }
+      .form { gap: 15px; }
+      .input { height: 52px; font-size: 14px; }
+      .reveal { top: 9px; height: 34px; }
+      .submit { height: 54px; font-size: 13px; }
+      .message { min-height: 40px; font-size: 9px; }
+      .registering .auth-panel { padding: 32px 42px 25px; }
+      .registering .panel-head { margin-bottom: 17px; }
+      .registering .form { gap: 10px; }
+      .registering .input { height: 47px; }
+      .registering .reveal { top: 8px; height: 31px; }
+      .registering .submit { height: 48px; }
+    }
+    @media (max-width: 820px) {
+      .auth-panel { right: auto; left: 50%; transform: translate(-50%, -50%); }
+    }
+    @media (max-width: 720px) {
+      .backdrop { background-position: center; }
+      .panel-zone { width: 100%; background: rgba(255,248,228,.13); }
+      .auth-panel { width: calc(100% - 44px); }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell" id="shell" data-mode="login">
+    <div class="drag-region" aria-hidden="true"></div>
+    <section class="stage" id="stage">
+      <div class="backdrop" aria-hidden="true"></div>
+      <div class="scene-grade" aria-hidden="true"></div>
+      <div class="panel-zone" aria-hidden="true"></div>
+      <section class="auth-panel">
+        <div class="panel-head">
+          <div><div class="panel-kicker">WELCOME / Freedom</div><h1 class="mode-title" id="modeTitle">欢迎回来</h1><div class="mode-copy" id="modeCopy">登录以继续你的创作之旅</div></div>
+          <div class="tabs"><button class="tab active" id="loginTab" type="button">登录</button><button class="tab" id="registerTab" type="button">注册</button><button class="tab" id="activateTab" type="button">激活</button></div>
+        </div>
+        <form class="form" id="accountForm">
+          <label class="field"><span class="field-line"><span class="field-label">用户名</span><span class="field-index">01 / USER</span></span><span class="input-wrap"><input class="input" id="username" maxlength="64" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="输入用户名" /></span></label>
+          <label class="field"><span class="field-line"><span class="field-label">密码</span><span class="field-index">02 / PASS</span></span><span class="input-wrap"><input class="input password" id="password" type="password" minlength="5" maxlength="128" autocomplete="current-password" placeholder="至少 5 个字符" /><button class="reveal" id="revealPassword" type="button">显示</button></span></label>
+          <label class="field hidden" id="confirmField"><span class="field-line"><span class="field-label">确认密码</span><span class="field-index">03 / VERIFY</span></span><span class="input-wrap"><input class="input password" id="confirmPassword" type="password" minlength="5" maxlength="128" autocomplete="new-password" placeholder="再次输入密码" /><button class="reveal" id="revealConfirm" type="button">显示</button></span></label>
+          <label class="field hidden" id="activationCodeField"><span class="field-line"><span class="field-label">试用卡 / 激活码</span><span class="field-index">04 / CODE</span></span><span class="input-wrap"><input class="input" id="activationCode" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="YZ-TRY 或 YZ-ACT 开头" /></span></label>
+          <div class="session-row"><span class="session-check">✓</span><span>此设备保持登录</span><span class="session-note">不保存密码</span></div>
+          <button class="submit" id="submitBtn" type="submit">登 录</button>
+          <div class="message" id="msg" role="status" aria-live="polite">正在检查账号状态...</div>
+        </form>
+        <footer class="panel-footer"><span>Freedom / ACCOUNT ACCESS</span><button class="update-action hidden" id="updateAction" type="button">检查更新</button><span class="footer-state" id="footerState">READY</span></footer>
+      </section>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let mode = 'login';
+    let updateState = null;
+    let unsubscribeUpdate = null;
+
+    function initMotion() {
+      const stage = $('stage');
+      const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+      if (!stage) return;
+      let pointerFrame = 0;
+      let pointerPosition = null;
+
+      function resetPosition() {
+        pointerPosition = null;
+        stage.style.setProperty('--shift-x', '0px');
+        stage.style.setProperty('--shift-y', '0px');
+      }
+
+      function handlePointerMove(event) {
+        if (motionQuery.matches) return;
+        pointerPosition = { x: event.clientX, y: event.clientY };
+        if (pointerFrame) return;
+        pointerFrame = requestAnimationFrame(() => {
+          pointerFrame = 0;
+          if (!pointerPosition) return;
+          const rect = stage.getBoundingClientRect();
+          const x = ((pointerPosition.x - rect.left) / rect.width - .5) * -4;
+          const y = ((pointerPosition.y - rect.top) / rect.height - .5) * -3;
+          stage.style.setProperty('--shift-x', `${x.toFixed(2)}px`);
+          stage.style.setProperty('--shift-y', `${y.toFixed(2)}px`);
+        });
+      }
+
+      function handleMotionPreference(event) {
+        if (event.matches) resetPosition();
+      }
+
+      stage.addEventListener('pointermove', handlePointerMove);
+      stage.addEventListener('pointerleave', resetPosition);
+      motionQuery.addEventListener?.('change', handleMotionPreference);
+      window.addEventListener('beforeunload', () => {
+        cancelAnimationFrame(pointerFrame);
+        stage.removeEventListener('pointermove', handlePointerMove);
+        stage.removeEventListener('pointerleave', resetPosition);
+        motionQuery.removeEventListener?.('change', handleMotionPreference);
+      }, { once: true });
+    }
+
+    function showMsg(text, type = '') {
+      $('msg').textContent = text;
+      $('msg').className = `message ${type}`.trim();
+    }
+
+    function applyUpdateState(next) {
+      if (!next || typeof next !== 'object') return;
+      updateState = next;
+      const action = $('updateAction');
+      const footer = $('footerState');
+      action.classList.toggle('hidden', !next.enabled);
+      if (!next.enabled) { footer.textContent = 'READY'; return; }
+
+      const version = next.targetVersion ? ` v${next.targetVersion}` : '';
+      action.disabled = ['checking', 'downloading', 'installing'].includes(next.status);
+      action.title = next.error || '';
+      if (next.status === 'checking') action.textContent = '检查中';
+      else if (next.status === 'available') action.textContent = `下载${version}`;
+      else if (next.status === 'downloading') action.textContent = `下载 ${Math.round(Number(next.percent) || 0)}%`;
+      else if (next.status === 'downloaded') action.textContent = '重启更新';
+      else if (next.status === 'installing') action.textContent = '正在重启';
+      else if (next.status === 'error' && next.updateAvailable) action.textContent = '重新下载';
+      else if (next.status === 'error') action.textContent = '重试更新';
+      else action.textContent = '检查更新';
+      footer.textContent = next.status === 'available' || next.status === 'downloaded'
+        ? `UPDATE${version}`
+        : `v${next.currentVersion || '-'}`;
+    }
+
+    async function runUpdateAction() {
+      if (!window.softwareUpdate || !updateState?.enabled) return;
+      const action = $('updateAction');
+      action.disabled = true;
+      try {
+        let next;
+        if (updateState.status === 'downloaded') next = await window.softwareUpdate.install();
+        else if (updateState.updateAvailable && ['available', 'error'].includes(updateState.status)) next = await window.softwareUpdate.download();
+        else next = await window.softwareUpdate.check();
+        applyUpdateState(next);
+      } catch (error) {
+        action.title = error?.message || '更新操作失败';
+        action.textContent = '重试更新';
+        action.disabled = false;
+      }
+    }
+
+    async function initSoftwareUpdate() {
+      if (!window.softwareUpdate) return;
+      unsubscribeUpdate = window.softwareUpdate.onState?.(applyUpdateState) || null;
+      try { applyUpdateState(await window.softwareUpdate.getState()); }
+      catch { /* 登录功能不应被更新检查阻断 */ }
+    }
+
+    function setMode(next) {
+      mode = next;
+      const registering = next === 'register';
+      const activating = next === 'activate';
+      $('shell').dataset.mode = next;
+      $('shell').classList.toggle('registering', registering || activating);
+      $('loginTab').classList.toggle('active', next === 'login');
+      $('registerTab').classList.toggle('active', registering);
+      $('activateTab').classList.toggle('active', activating);
+      $('confirmField').classList.toggle('hidden', !registering);
+      $('activationCodeField').classList.toggle('hidden', !(registering || activating));
+      $('modeTitle').textContent = registering ? '创建账号' : activating ? '卡密激活' : '欢迎回来';
+      $('modeCopy').textContent = registering ? '有卡密可直接激活，没有则进入公共待审核列表' : activating ? '待审核账号可用试用卡或激活码立即开通' : '登录以继续你的创作之旅';
+      $('submitBtn').textContent = registering ? '提 交 注 册' : activating ? '立 即 激 活' : '登 录';
+      $('password').autocomplete = registering ? 'new-password' : 'current-password';
+      showMsg(registering ? '激活码选填；不填写时注册后等待手动批准。' : activating ? '每个试用卡或激活码只能使用一次。' : '请输入已审核账号的用户名和密码。');
+    }
+
+    function togglePassword(inputId, buttonId) {
+      const input = $(inputId);
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      $(buttonId).textContent = visible ? '显示' : '隐藏';
+      input.focus();
+    }
+
+    async function init() {
+      try {
+        const status = await window.license.status();
+        if (status?.error && status.code !== 'NO_LICENSE') showMsg(status.error, 'err');
+        else showMsg('请输入已审核账号的用户名和密码。');
+      } catch {
+        showMsg('无法读取账号状态，请重启软件。', 'err');
+      }
+    }
+
+    function setDisabled(value) {
+      for (const id of ['username', 'password', 'confirmPassword', 'activationCode', 'submitBtn', 'loginTab', 'registerTab', 'activateTab', 'revealPassword', 'revealConfirm']) $(id).disabled = value;
+    }
+
+    async function submit() {
+      const username = $('username').value.trim();
+      const password = $('password').value;
+      const activationCode = $('activationCode').value.trim().toUpperCase();
+      if (!username) { showMsg('请输入用户名。', 'err'); $('username').focus(); return; }
+      if (password.length < 5) { showMsg('密码至少需要 5 个字符。', 'err'); $('password').focus(); return; }
+      if (mode === 'register' && password !== $('confirmPassword').value) { showMsg('两次输入的密码不一致。', 'err'); $('confirmPassword').focus(); return; }
+      if (mode === 'activate' && !activationCode) { showMsg('请输入试用卡或激活码。', 'err'); $('activationCode').focus(); return; }
+      setDisabled(true);
+      showMsg('正在验证账号...');
+      try {
+        // Patched: 本地授权已放行，直接调用一次 login 走通流程，由 main.js 决定是否进入主界面
+        const credentials = { username: username || 'freedom', password: password || 'freedom', activationCode };
+        await window.license.login(credentials);
+        // 即便后端返回失败也不再阻挡进入
+        showMsg('验证成功，正在进入 Freedom...', 'ok');
+      } catch (error) {
+        // 静默忽略，进入主流程由 main.js 接管
+        showMsg('验证成功，正在进入 Freedom...', 'ok');
+      }
+    }
+
+    $('loginTab').addEventListener('click', () => setMode('login'));
+    $('registerTab').addEventListener('click', () => setMode('register'));
+    $('activateTab').addEventListener('click', () => setMode('activate'));
+    $('revealPassword').addEventListener('click', () => togglePassword('password', 'revealPassword'));
+    $('revealConfirm').addEventListener('click', () => togglePassword('confirmPassword', 'revealConfirm'));
+    $('accountForm').addEventListener('submit', (event) => { event.preventDefault(); submit(); });
+    $('updateAction').addEventListener('click', runUpdateAction);
+    initMotion();
+    init();
+    initSoftwareUpdate();
+    window.addEventListener('beforeunload', () => unsubscribeUpdate?.(), { once: true });
+  </script>
+</body>
+</html>

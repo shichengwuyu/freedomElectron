@@ -1,0 +1,63 @@
+{
+  "name": "freedom",
+  "version": "1.1.31",
+  "description": "Freedom - 小说到剧本/分镜/元素/出图一站式流水线",
+  "type": "module",
+  "main": "electron/main.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Freedom",
+  "license": "ISC",
+  "scripts": {
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.xiaoyxiao.freedom",
+    "productName": "Freedom",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "backend/**",
+      "frontend/**",
+      "assets/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/ffmpeg",
+        "to": "ffmpeg"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/yanzhi-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Freedom"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "playwright-core": "^1.60.0"
+  },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

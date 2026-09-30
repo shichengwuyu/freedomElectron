@@ -1,0 +1,66 @@
+﻿/* ---------- 项目质检中心 ---------- */
+.quality-trigger-badge { display: inline-flex; }
+.quality-trigger { border-color: rgba(74,222,140,.28) !important; }
+.quality-trigger .el-icon { color: #86efac; }
+.quality-dialog .el-dialog__header { padding-bottom: 8px; }
+.quality-dialog .el-dialog__body { padding-top: 10px; }
+.quality-dialog-title { display: flex; align-items: center; gap: 13px; }
+.quality-dialog-title h2 { margin: 3px 0 2px; font-size: 23px; }
+.quality-dialog-title p { margin: 0; color: var(--muted); font-size: 12px; }
+.quality-dialog-icon { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(74,222,140,.3); border-radius: 14px; color: #86efac; background: rgba(74,222,140,.09); font-size: 24px; }
+.quality-dialog-body { display: grid; gap: 14px; min-height: 340px; max-height: min(72vh, 820px); overflow: auto; padding-right: 4px; }
+.quality-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.quality-summary-card { display: grid; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.quality-summary-card span { color: var(--muted); font-size: 12px; }
+.quality-summary-card strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+.quality-summary-card small { color: var(--muted-2); line-height: 1.4; }
+.quality-summary-card.is-error { border-color: rgba(248,113,113,.28); }
+.quality-summary-card.is-error strong { color: #fca5a5; }
+.quality-summary-card.is-warning { border-color: rgba(251,191,36,.28); }
+.quality-summary-card.is-warning strong { color: #fcd34d; }
+.quality-summary-card.is-info strong { color: #93c5fd; }
+.quality-summary-card.is-total { background: linear-gradient(145deg, rgba(245,181,68,.1), var(--surface-2)); }
+.quality-summary-card.is-total strong { color: var(--gold-hot); }
+.quality-storage-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.quality-storage-main { display: flex; align-items: center; gap: 11px; }
+.quality-storage-main > div { display: grid; gap: 4px; }
+.quality-storage-main p { margin: 0; color: var(--muted); font-size: 12px; }
+.quality-storage-dot { width: 11px; height: 11px; flex: 0 0 auto; border-radius: 50%; background: #f87171; box-shadow: 0 0 0 5px rgba(248,113,113,.1); }
+.quality-storage-dot.ok { background: #4ade80; box-shadow: 0 0 0 5px rgba(74,222,140,.1); }
+.quality-auto-fixes { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+.quality-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; }
+.quality-filter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.quality-issue-list { display: grid; gap: 8px; }
+.quality-issue { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); border-left-width: 3px; border-radius: var(--radius-xs); background: var(--surface-2); transition: border-color .16s, transform .16s; }
+.quality-issue:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.quality-issue.is-error { border-left-color: #f87171; }
+.quality-issue.is-warning { border-left-color: #fbbf24; }
+.quality-issue.is-info { border-left-color: #60a5fa; }
+.quality-issue-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-3); font-size: 19px; }
+.quality-issue.is-error .quality-issue-mark { color: #fca5a5; }
+.quality-issue.is-warning .quality-issue-mark { color: #fcd34d; }
+.quality-issue.is-info .quality-issue-mark { color: #93c5fd; }
+.quality-issue-copy { min-width: 0; display: grid; gap: 5px; }
+.quality-issue-title { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.quality-issue-copy p { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+.quality-issue-copy > small { color: var(--muted-2); font-family: "JetBrains Mono", Consolas, monospace; }
+.quality-perfect-state { min-height: 230px; display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; border: 1px dashed rgba(74,222,140,.28); border-radius: var(--radius-sm); background: rgba(74,222,140,.045); }
+.quality-perfect-state > .el-icon { color: #4ade80; font-size: 48px; }
+.quality-perfect-state strong { font-size: 18px; }
+.quality-perfect-state p { margin: 0; color: var(--muted); }
+.quality-pagination { display: flex; justify-content: flex-end; padding-top: 4px; }
+.quality-dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.quality-dialog-footer > span { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 820px) {
+  .quality-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quality-storage-card,
+  .quality-toolbar { align-items: stretch; flex-direction: column; }
+  .quality-auto-fixes { justify-content: flex-start; }
+  .quality-issue { grid-template-columns: auto minmax(0, 1fr); }
+  .quality-issue > .el-button { grid-column: 2; justify-self: start; }
+}
+@media (max-width: 520px) {
+  .quality-summary-grid { grid-template-columns: 1fr; }
+  .quality-dialog-footer { align-items: flex-end; flex-direction: column; }
+}

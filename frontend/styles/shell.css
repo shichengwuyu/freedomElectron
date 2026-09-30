@@ -1,0 +1,187 @@
+/* ============================================================
+   Freedom · 应用壳层（对齐 new-api 的 sidebar + header + content）
+   只做「加宽侧栏 + 分组 + 横向导航项 + 扁平顶栏」，
+   沿用原有 .side-rail / .rail-* 类名，避免破坏 responsive.css。
+   窄屏（<=1040px）仍由 responsive.css 切成底部导航条，这里不介入。
+   ============================================================ */
+
+@media (min-width: 1041px) {
+  /* 侧栏加宽：86px 图标轨道 → 240px 分组侧边栏 */
+  .studio-shell {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .side-rail {
+    gap: 14px;
+    padding: 14px 12px 12px;
+    /* 覆盖 base.css 的 rgba(13,10,8,.92) 半透明暖黑：加宽后后面的内容会透出来 */
+    background: var(--bg-2);
+  }
+
+  /* 品牌区：图标 + 文字横排 */
+  .side-rail .rail-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .side-rail .rail-brand .brand-mark {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+  }
+  .side-rail .rail-brand span {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--ink);
+  }
+
+  /* 导航：分组竖排 */
+  .side-rail .rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  .side-rail .rail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .side-rail .rail-group-title {
+    padding: 0 10px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    user-select: none;
+  }
+  .side-rail .rail-group-plain {
+    padding-top: 2px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* 导航项：横排（图标 + 文字），左对齐，圆角高亮 */
+  .side-rail .rail-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-align: left;
+  }
+  .side-rail .rail-item-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    font-size: 16px;
+    display: grid;
+    place-items: center;
+  }
+  .side-rail .rail-item-label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .side-rail .rail-item:hover {
+    background: var(--surface-2);
+  }
+  .side-rail .rail-item.active {
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+  .side-rail .rail-item.active::before {
+    display: none;
+  }
+
+  /* 底栏：主题 / Agent 横排 */
+  .side-rail .rail-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .side-rail .rail-theme-menu .rail-item {
+    width: 100%;
+  }
+}
+
+/* 高度吃紧时（720 高的窗口）收紧间距，仍保留分组标题 */
+@media (min-width: 1041px) and (max-height: 760px) {
+  .side-rail { gap: 10px; padding: 10px 10px 8px; }
+  .side-rail .rail-nav { gap: 10px; }
+  .side-rail .rail-group-title { padding: 0 10px 4px; font-size: 10px; }
+  .side-rail .rail-item { padding: 6px 9px; }
+  .side-rail .rail-item-label { font-size: 12.5px; }
+}
+
+/* ---------- Lucide 图标默认尺寸 ----------
+   原来是 el-icon（1em），换成的 <svg class="app-icon"> 没有固有尺寸。
+   这里统一成 16px 固定基准 —— 与侧栏 rail-item-icon（16px）保持一致，
+   避免图标跟随容器字号忽大忽小。需要更大/更小的地方单独用 :size 或 CSS 覆盖。 */
+.app-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+/* 小号按钮里的图标略收一号，避免撑按钮 */
+.el-button--small .app-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- 品牌图标：改用 Lucide tv（原为 Q 版角色头像 PNG） ---------- */
+.brand-mark .app-icon,
+.desktop-titlebar-mark .app-icon {
+  width: 100%;
+  height: 100%;
+  color: var(--el-color-primary);
+}
+
+/* ---------- 顶栏：扁平化，贴近 new-api ---------- */
+.studio-topbar {
+  min-height: 56px;
+  padding: 10px 24px;
+  border-image: none;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in oklch, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+.studio-topbar .title-stack h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.studio-topbar .eyebrow {
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--muted-2);
+  text-transform: uppercase;
+}
+.studio-topbar .topbar-context span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.studio-topbar .topbar-context b {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ---------- 内容区：对齐 new-api 的留白 ---------- */
+.content-stage {
+  padding: 22px 24px 40px;
+}
