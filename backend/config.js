@@ -159,9 +159,11 @@ const DEFAULT_CONFIG = {
   },
   // 模型网关(new-api)：XiaoyXiao 的视频/图片/文本模型统一经此网关(OpenAI 兼容)提供。
   // baseUrl 为网关地址（可在「模型网关」设置中修改），userToken 为 new-api 用户令牌（卡密兑换充到该账号）。
+  // shopUrl 是可选的「购买卡密」入口：留空则设置面板不显示任何购买/推广入口（开源发行版默认留空）。
   gateway: {
     baseUrl: 'https://api.xiaoyxiao.xyz',
     userToken: '',
+    shopUrl: '',
   },
   image: {
     provider: 'api',
@@ -416,6 +418,8 @@ export function normalizeGateway(gateway = {}) {
   return {
     baseUrl: normalizeApiBaseUrl(gateway?.baseUrl, 'https://api.xiaoyxiao.xyz'),
     userToken: String(gateway?.userToken || '').trim(),
+    // 运营可选：卡密购买页地址。留空 = 界面不显示购买入口。
+    shopUrl: String(gateway?.shopUrl || '').trim(),
   };
 }
 

@@ -2044,27 +2044,6 @@ const App = {
       },
     });
 
-    // 卡密兑换状态：必须在 setup 作用域定义并进入最终 return，模板才能拿到。
-    // 之前误放进了 createXxxRuntime 的依赖对象，模板作用域读不到 redeemState，
-    // 打开「模型网关 & 卡密」面板就报 "Cannot read properties of undefined (reading 'key')"。
-    const redeemState = reactive({ key: '', redeeming: false, result: null });
-    const redeemCard = async (rawKey) => {
-      const key = String(rawKey || '').trim();
-      if (!key) { messageHandlers.info('请输入卡密'); return; }
-      redeemState.redeeming = true;
-      redeemState.result = null;
-      try {
-        const result = await api.post('/api/redeem', { key });
-        redeemState.result = result;
-        if (result?.ok) messageHandlers.success(`兑换成功${result.quota != null ? '，到账额度：' + result.quota : ''}`);
-        else messageHandlers.error(result?.error || '兑换失败');
-      } catch (e) {
-        messageHandlers.error(`兑换失败：${e?.message || e}`);
-      } finally {
-        redeemState.redeeming = false;
-      }
-    };
-
     return {
       ...novelRuntime,
       ...coverRuntime,
@@ -2076,7 +2055,6 @@ const App = {
       license,
       view,
       ...settingsRuntime,
-      redeemState, redeemCard,
       ...themeRuntime,
       ...modelRoutingRuntime,
       fetchTextModelsAndSync,

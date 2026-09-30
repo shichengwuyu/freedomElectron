@@ -185,7 +185,7 @@ export async function handleConfigRoutes(ctx) {
       appearance: cfg.appearance || { theme: 'dark' },
       generationSafety: cfg.generationSafety || { videoGuardEnabled: false, videoGuardSeconds: 10 },
       costTracking: cfg.costTracking || { currency: 'CNY', monthlyBudget: 0 },
-      gateway: cfg.gateway || { baseUrl: 'https://api.xiaoyxiao.xyz', userToken: '' },
+      gateway: cfg.gateway || { baseUrl: 'https://api.xiaoyxiao.xyz', userToken: '', shopUrl: '' },
       performance: {
         hardwareAcceleration: cfg.performance?.hardwareAcceleration !== false,
         reduceMotion: cfg.performance?.reduceMotion === true,

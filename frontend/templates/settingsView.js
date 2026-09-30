@@ -17,7 +17,7 @@ export const settingsView = /* html */ `        <template v-if="view === 'settin
                 <button :class="{active: settingsSection === 'image'}" @click="settingsSection = 'image'"><AppIcon name="image" /><span>图片模型</span></button>
                 <button :class="{active: settingsSection === 'imageHosting'}" @click="settingsSection = 'imageHosting'"><AppIcon name="upload" /><span>图床</span></button>
                 <button :class="{active: settingsSection === 'video'}" @click="settingsSection = 'video'"><AppIcon name="video" /><span>视频模型</span></button>
-                <button :class="{active: settingsSection === 'gateway'}" @click="settingsSection = 'gateway'"><AppIcon name="key-round" /><span>模型网关 &amp; 卡密</span></button>
+                <button :class="{active: settingsSection === 'gateway'}" @click="settingsSection = 'gateway'"><AppIcon name="key-round" /><span>模型网关</span></button>
                 <button :class="{active: settingsSection === 'cost'}" @click="settingsSection = 'cost'"><AppIcon name="chart-column" /><span>成本中心</span></button>
               </div>
               <div class="settings-nav-group">
@@ -1244,8 +1244,8 @@ export const settingsView = /* html */ `        <template v-if="view === 'settin
                 </div>
               </template>
               <template v-if="settingsSection === 'gateway'">
-                <div class="settings-head"><div><div class="eyebrow">Gateway</div><h2>模型网关 &amp; 卡密</h2></div></div>
-                <p class="settings-hint">文本 / 图片 / 视频默认经此网关（new-api，OpenAI 兼容）提供，开箱即用；内置渠道的 Base URL 与 API Key 已经指向这里。</p>
+                <div class="settings-head"><div><div class="eyebrow">Gateway</div><h2>模型网关</h2></div></div>
+                <p class="settings-hint">文本 / 图片 / 视频可统一经此网关（new-api，OpenAI 兼容）提供；填你自己的 new-api 地址同样兼容。</p>
                 <section class="settings-card">
                   <h3>模型网关（new-api）</h3>
                   <el-form label-width="120px">
@@ -1254,13 +1254,13 @@ export const settingsView = /* html */ `        <template v-if="view === 'settin
                     </el-form-item>
                   </el-form>
                 </section>
-                <section class="settings-card">
+                <!-- 卡密入口只在配置了 gateway.shopUrl 时出现：开源发行版默认不显示任何购买/推广入口。 -->
+                <section v-if="cfg.gateway.shopUrl" class="settings-card">
                   <h3>卡密购买 &amp; 兑换</h3>
                   <p class="settings-hint">购买卡密后打开网关站并登录，在控制台的「充值 / 兑换」页粘贴卡密即可到账。内置渠道消耗的就是这个账户的余额，应用内无需填写任何令牌。</p>
                   <p class="settings-hint">
-                    <a href="https://wzyp.cn/shop/35TCHF9A" target="_blank" rel="noopener">① 购买卡密 →</a>
-                    &nbsp;&nbsp;&nbsp;
-                    <a :href="cfg.gateway.baseUrl || 'https://api.xiaoyxiao.xyz'" target="_blank" rel="noopener">② 打开网关充值页 →</a>
+                    <a :href="cfg.gateway.shopUrl" target="_blank" rel="noopener">① 购买卡密 →</a>
+                    <span v-if="cfg.gateway.baseUrl">&nbsp;&nbsp;&nbsp;<a :href="cfg.gateway.baseUrl" target="_blank" rel="noopener">② 打开网关充值页 →</a></span>
                   </p>
                 </section>
               </template>
