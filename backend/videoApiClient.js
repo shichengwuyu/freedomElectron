@@ -170,6 +170,17 @@ export function isSubmitRetryableNetworkError(error) {
   if (isSubmitResultUnknownError(error)) return false;
   return /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|EHOSTUNREACH|ENETUNREACH|connect ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|CERT_|UNABLE_TO_VERIFY|SELF_SIGNED|ERR_TLS/i.test(submitErrorText(error));
 }
+
+// 明确的「请求被拒、肯定没建单」状态码；换渠道重来是安全的。
+const SUBMIT_REJECTED_STATUSES = new Set([400, 401, 403, 404, 405, 413, 415, 422, 429]);
+// 有响应、但无法确认上游是否已经建单（5xx / 408 这类）：和"响应被中断"一样必须当作结果未知。
+// 之前这类错误既不是 unknown 也不是可重试的网络错误，于是一路走到 attempt >= allowedRetries
+// 之后被重发 —— 非幂等的创建请求被重复提交，还会 failover 到别的渠道再建一个，重复计费。
+export function isSubmitOutcomeUnknownStatus(error) {
+  const status = Number(error?.status);
+  if (!Number.isFinite(status) || status <= 0) return false;
+  return !SUBMIT_REJECTED_STATUSES.has(status);
+}
 const NETWORK_RETRY_DELAYS_MS = [800, 2500, 6000];
 
 // 全局画风 → 视频 prompt 前缀：让视频与元素出图风格一致（真人/漫剧/水墨…）。
@@ -1052,6 +1063,12 @@ export async function submitVideos({ apiConfig, shots = [], onProgress, onSubmit
             if (isSubmitResultUnknownError(error)) {
               outcomeUnknown = true;
               onProgress?.(`${candidate.channelName} 提交响应被中断，且该网关不幂等，已停止重交（任务可能已在上游创建）`);
+              break;
+            }
+            // 5xx / 408 这类「有响应但结果不明」同样不能重交：上游可能在报错前已经建单。
+            if (isSubmitOutcomeUnknownStatus(error)) {
+              outcomeUnknown = true;
+              onProgress?.(`${candidate.channelName} 提交返回 ${Number(error.status)}，无法确认上游是否已建单；该网关不幂等，已停止重交`);
               break;
             }
             // 只有连接阶段的失败（请求根本没发出去）才安全重交。

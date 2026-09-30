@@ -1165,14 +1165,29 @@ async function submitOneAgentVideo(page, projectId, task = {}, { onSubmissionAcc
 
   await disableAgentTools(page, composer);
   ensureAgentSubmissionActive(shouldCancel);
+  // request.response() 没有超时参数：站点收了 POST 却不回包时会永远挂住。
+  // 浏览器操作是串行的（enqueueBrowserOperation），卡一次就让整个即梦 Agent 队列停摆。
+  const withTimeout = (promise, ms, message) => {
+    let timer = 0;
+    const source = Promise.resolve(promise);
+    source.catch(() => {}); // 超时后它再 reject 也不能变成 unhandled rejection
+    return Promise.race([
+      source,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); }),
+    ]).finally(() => clearTimeout(timer));
+  };
+
   const collector = createCanvasResponseCollector(page);
-  const requestPromise = page.waitForRequest((request) => (
-    request.method() === 'POST' && request.url().includes('/mweb/v1/infinite_canvas/conversation')
-  ), { timeout: 30000 });
-  const submitButton = composer.locator('button[class*="submit-button"]:visible:not([disabled])').last();
-  await submitButton.waitFor({ state: 'visible', timeout: 10000 });
   let acceptedSubmission = null;
   try {
+    // 这两步原先在 try 之外：waitFor 一超时就直接抛，下面 finally 的 collector.stop() 不会执行，
+    // 页面会永久留下一个 response 监听器，把之后每份历史 JSON 都解析进内存。
+    const requestPromise = page.waitForRequest((request) => (
+      request.method() === 'POST' && request.url().includes('/mweb/v1/infinite_canvas/conversation')
+    ), { timeout: 30000 });
+    requestPromise.catch(() => {});
+    const submitButton = composer.locator('button[class*="submit-button"]:visible:not([disabled])').last();
+    await submitButton.waitFor({ state: 'visible', timeout: 10000 });
     await submitButton.click();
     const submittedAt = Date.now();
     const request = await requestPromise;
@@ -1182,7 +1197,7 @@ async function submitOneAgentVideo(page, projectId, task = {}, { onSubmissionAcc
       throw new Error('官网请求未确认上传素材与 @ 芯片的结构化绑定，已阻止将该任务标记为正常提交');
     }
 
-    const response = await request.response();
+    const response = await withTimeout(request.response(), 30000, '即梦 Agent 提交后等待响应超时');
     if (!response?.ok()) throw new Error(`即梦 Agent 提交接口返回 ${response?.status() || '未知错误'}`);
     let responseBody = {};
     try { responseBody = await response.json() || {}; } catch { /* response can be empty */ }

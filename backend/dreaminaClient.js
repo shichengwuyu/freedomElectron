@@ -250,8 +250,11 @@ function findInstalledCliPath() {
 }
 
 function isCommandMissing(error) {
-  const text = `${error?.code || ''} ${error?.message || ''} ${error?.stderr || ''} ${error?.stdout || ''}`;
-  return /ENOENT|EINVAL|not recognized|not found|command not found|cannot find/i.test(text);
+  // 只看 code 与 message。早先连 stderr/stdout 一起匹配，于是真实提交失败时
+  // stderr 里的 "not found"（模型/文件/任务不存在）会被误判成「CLI 没装」，
+  // execDreamina 就换下一个候选二进制把**同一条命令再跑一遍** —— 重复提交、重复计费。
+  const text = `${error?.code || ''} ${error?.message || ''}`;
+  return /ENOENT|not recognized|command not found|cannot find/i.test(text);
 }
 
 function normalizeExecError(error, commandName) {

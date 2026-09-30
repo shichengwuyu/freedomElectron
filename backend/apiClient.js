@@ -148,10 +148,27 @@ function candidateConfigs(cfg = {}) {
   return [cfg, ...fallbacks].filter((candidate) => candidate && typeof candidate === 'object');
 }
 
+function imageErrorText(error) {
+  return `${error?.message || ''} ${error?.cause?.code || ''} ${error?.code || ''}`;
+}
+
+// 与视频提交同一套判断：出图也是付费、非幂等的。
+// 「响应没拿回来」（连接重置/读中断/超时）时上游可能已经出图并计费，重发就是重复扣费；
+// 只有「请求确定没送出去」的连接阶段失败才允许重发。
+function imageResultUnknownError(error) {
+  return /ECONNRESET|EPIPE|socket hang up|UND_ERR_SOCKET|UND_ERR_HEADERS_TIMEOUT|read ECONNRESET|请求超时|timeout/i.test(imageErrorText(error));
+}
+
+function imageRetryableNetworkError(error) {
+  if (imageResultUnknownError(error)) return false;
+  return /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|EHOSTUNREACH|ENETUNREACH|connect ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|CERT_|UNABLE_TO_VERIFY|SELF_SIGNED|ERR_TLS/i.test(imageErrorText(error));
+}
+
 function retryableError(error) {
   if (!error || error.name === 'AbortError' || error.truncated) return false;
-  if (!error.status) return true;
-  return [408, 409, 425, 429, 500, 502, 503, 504].includes(Number(error.status));
+  // 有明确 HTTP 状态时按状态判断（408 结果不明，已移出可重试集合，避免重复出图）。
+  if (error.status) return [409, 425, 429, 500, 502, 503, 504].includes(Number(error.status));
+  return imageRetryableNetworkError(error);
 }
 
 function estimateTokensFromText(value) {
