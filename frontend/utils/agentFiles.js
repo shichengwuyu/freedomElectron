@@ -1581,43 +1581,74 @@ export async function runAgentInstructionFlow(agent, handlers = {}) {
     if (!result.ok) throw new Error(result.error || 'Agent planning failed');
     const plan = result.plan || { reply: '', actions: [] };
     agent.lastPlan = plan;
-    agent.messages.push({ role: 'agent', content: plan.reply || '我开始执行。', time: new Date().toLocaleTimeString() });
+    agent.messages.push({ role: 'agent', content: plan.reply || '我来处理。', time: new Date().toLocaleTimeString() });
     const actions = Array.isArray(plan.actions) ? plan.actions : [];
-    handlers.log(`计划执行 ${actions.length} 个动作`, 'success');
     if (!actions.length) {
-      handlers.setProgress({ label: '没有需要执行的动作', detail: plan.reply || '', current: 1, total: 1, percentage: 100, status: 'success' });
+      handlers.log('没有需要执行的动作', 'info');
+      handlers.setProgress({ active: false, label: '没有需要执行的动作', detail: plan.reply || '', percentage: 0, status: '' });
+      if (plan.reply) handlers.showInfo(plan.reply);
+      completed = true;
+      return;
     }
-    for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
-      const actionLabel = action?.type ? `执行 ${action.type}` : '执行动作';
-      if (action?.type !== 'run_full_pipeline') {
-        handlers.setProgress({
-          label: actionLabel,
-          detail: `${i + 1} / ${actions.length}`,
-          current: i,
-          total: actions.length,
-          percentage: Math.round(10 + (i / actions.length) * 85),
-          status: '',
-        });
-      }
-      const actionResult = await handlers.executeAction(action);
-      handlers.log(`${actionResult.ok ? '完成' : '跳过'}：${actionResult.message}`, actionResult.ok ? 'success' : 'warning');
-      if (!actionResult?.ok) {
-        throw new Error(actionResult?.message || `${actionLabel}失败`);
-      }
-      if (action?.type !== 'run_full_pipeline') {
-        handlers.setProgress({
-          label: actionResult.message || actionLabel,
-          detail: `${i + 1} / ${actions.length}`,
-          current: i + 1,
-          total: actions.length,
-          percentage: Math.round(10 + ((i + 1) / actions.length) * 85),
-          status: actionResult.ok ? '' : 'warning',
-        });
-      }
+    // 不再直接开跑：先让用户看一眼「这次要动哪些数据」。附件要留到真正执行时（upload_attachment_* 按名字取）。
+    agent.pendingPlan = { actions, reply: plan.reply || '' };
+    handlers.log(`已生成 ${actions.length} 个动作，确认后执行`, 'warning');
+    handlers.setProgress({ active: false, label: '等待确认执行', detail: `${actions.length} 个动作`, percentage: 0, status: '' });
+    handlers.showInfo?.(`已生成 ${actions.length} 个动作，确认后执行`);
+  } catch (error) {
+    agent.messages.push({ role: 'agent', content: `规划失败：${error.message}`, time: new Date().toLocaleTimeString() });
+    handlers.log(error.message, 'error');
+    handlers.failProgress(error.message);
+    handlers.showError(`Agent 规划失败：${error.message}`);
+  } finally {
+    // 延迟执行时不能清附件——待执行的动作还要按名字取它们。
+    if (completed && attachments.length) handlers.clearFiles({ silent: true });
+    agent.running = false;
+  }
+}
+
+export async function executeAgentActionsFlow(agent, actions = [], handlers = {}) {
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+    const actionLabel = action?.type ? `执行 ${action.type}` : '执行动作';
+    if (action?.type !== 'run_full_pipeline') {
+      handlers.setProgress({
+        label: actionLabel,
+        detail: `${i + 1} / ${actions.length}`,
+        current: i,
+        total: actions.length,
+        percentage: Math.round(10 + (i / actions.length) * 85),
+        status: '',
+      });
     }
-    if (!actions.length && plan.reply) handlers.showInfo(plan.reply);
-    else handlers.showSuccess('Agent 已执行完成');
+    const actionResult = await handlers.executeAction(action);
+    handlers.log(`${actionResult.ok ? '完成' : '跳过'}：${actionResult.message}`, actionResult.ok ? 'success' : 'warning');
+    if (!actionResult?.ok) throw new Error(actionResult?.message || `${actionLabel}失败`);
+    if (action?.type !== 'run_full_pipeline') {
+      handlers.setProgress({
+        label: actionResult.message || actionLabel,
+        detail: `${i + 1} / ${actions.length}`,
+        current: i + 1,
+        total: actions.length,
+        percentage: Math.round(10 + ((i + 1) / actions.length) * 85),
+        status: actionResult.ok ? '' : 'warning',
+      });
+    }
+  }
+}
+
+export async function runAgentPendingPlanFlow(agent, handlers = {}) {
+  const pending = agent?.pendingPlan;
+  if (!pending || agent.running) return;
+  const actions = Array.isArray(pending.actions) ? pending.actions : [];
+  agent.pendingPlan = null;
+  if (!actions.length) return;
+  agent.running = true;
+  let completed = false;
+  try {
+    handlers.log(`确认执行 ${actions.length} 个动作`, 'info');
+    await executeAgentActionsFlow(agent, actions, handlers);
+    handlers.showSuccess('Agent 已执行完成');
     handlers.finishProgress('Agent 执行完成');
     completed = true;
   } catch (error) {
@@ -1626,9 +1657,17 @@ export async function runAgentInstructionFlow(agent, handlers = {}) {
     handlers.failProgress(error.message);
     handlers.showError(`Agent 执行失败：${error.message}`);
   } finally {
-    if (completed && attachments.length) handlers.clearFiles({ silent: true });
+    if (completed && Array.isArray(agent.files) && agent.files.length) handlers.clearFiles({ silent: true });
     agent.running = false;
   }
+}
+
+export function cancelAgentPendingPlanFlow(agent, handlers = {}) {
+  if (!agent?.pendingPlan) return;
+  const count = agent.pendingPlan.actions?.length || 0;
+  agent.pendingPlan = null;
+  handlers.log?.(`已取消本次计划（${count} 个动作未执行）`, 'warning');
+  handlers.setProgress?.({ active: false, label: '已取消', detail: '', percentage: 0, status: '' });
 }
 
 export async function runAgentSimpleAction(action = {}, handlers = {}) {
@@ -2275,6 +2314,22 @@ export function createAgentRuntime({
   });
   executeAgentAction = executePanelAgentAction;
 
+  const runAgentPendingPlan = () => runAgentPendingPlanFlow(refs.agent, {
+    executeAction: (action) => executeAgentAction(action),
+    setProgress: setAgentProgress,
+    finishProgress: finishAgentProgress,
+    failProgress: failAgentProgress,
+    clearFiles: clearAgentFiles,
+    log: agentLog,
+    showInfo: (text) => message.info(text),
+    showSuccess: (text) => message.success(text),
+    showError: (text) => message.error(text),
+  });
+  const cancelAgentPendingPlan = () => cancelAgentPendingPlanFlow(refs.agent, {
+    log: agentLog,
+    setProgress: setAgentProgress,
+  });
+
   return {
     agentLog,
     setAgentProgress,
@@ -2302,6 +2357,8 @@ export function createAgentRuntime({
     ...attachmentActions,
     ...shotActions,
     runAgentInstruction,
+    runAgentPendingPlan,
+    cancelAgentPendingPlan,
     handleAgentInputKeydown,
     openAgent,
   };

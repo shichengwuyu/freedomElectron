@@ -2,6 +2,66 @@ export const AGENT_ATTACHMENT_MAX_FILES = 12;
 export const AGENT_ATTACHMENT_MAX_TOTAL_BYTES = 50 * 1024 * 1024;
 export const AGENT_ATTACHMENT_TEXT_LIMIT = 200000;
 
+// 空状态直接告诉用户「它能干什么」和「怎么开口」，否则这个面板等于没有说明书。
+export const AGENT_CAPABILITIES = [
+  { icon: 'pen-line', title: '改内容', items: '章节 / 分镜镜头 / 元素（人物·场景·道具·特效）的增删改' },
+  { icon: 'wand-sparkles', title: '跑生成', items: '单集或全部剧本、分镜、出图、镜头视频，以及整条流水线' },
+  { icon: 'image', title: '填素材', items: '把附件图片直接写进元素图 / 参考图 / 角色造型 / 服装 / 角色语音' },
+  { icon: 'settings', title: '改配置', items: '直接改写项目与设置里的字段，并调用本地接口' },
+];
+
+export const AGENT_EXAMPLES = [
+  '把第 5 个分镜改成俯拍，人物站在门口，氛围更压抑；然后保存。',
+  '给第 1 集所有还没生成视频的镜头排上生成队列。',
+  '把附件这张图设为「林晚」的主参考图。',
+  '用我上传的小说原文，从第一章开始分集，并提取人物和场景。',
+];
+
+// 计划预览里把动作名翻译成人话。
+const AGENT_ACTION_LABELS = {
+  add_chapter: '新增章节', split_chapter: '拆分章节', delete_chapter: '删除章节',
+  extract_elements_from_source: '从原文提取元素',
+  generate_episode: '生成剧本', generate_storyboard: '生成分镜',
+  generate_all_episodes: '生成全部剧本', generate_all_storyboards: '生成全部分镜',
+  replace_shot: '替换镜头', insert_shot_after: '插入镜头', delete_shot: '删除镜头',
+  remove_shot_tag_bindings: '解除镜头标签绑定',
+  add_element: '新增元素', delete_element: '删除元素', update_element: '修改元素', clear_elements: '清空元素',
+  generate_image: '生成图片', run_batch_images: '批量出图',
+  generate_shot_video: '生成镜头视频', generate_all_shot_videos: '生成全部镜头视频',
+  clear_shot_video: '清除镜头视频', cancel_shot_queue: '取消排队', clear_pending_videos: '清除待生成视频',
+  clear_video_queue: '清空视频队列', run_full_pipeline: '跑完整流水线',
+  create_project: '新建项目', delete_project: '删除项目',
+  set_view: '切换页面', open_project: '打开项目', set_stage: '切换阶段',
+  select_episode: '选择剧集', select_storyboard_episode: '选择分镜集',
+  open_elements: '打开元素库', select_category: '切换分类', select_element: '选中元素',
+  set_path: '改写配置字段', delete_path: '删除配置字段',
+  api_get: '读取本地接口', api_post: '调用本地接口',
+  save_project: '保存项目', save_script: '保存剧本', save_settings: '保存设置', show_message: '提示消息',
+  upload_attachment_image: '写入附件图片', upload_attachment_element_image: '写入元素图',
+  upload_attachment_reference_image: '写入参考图', upload_attachment_variant_image: '写入角色造型',
+  upload_attachment_outfit_image: '写入服装', upload_attachment_character_audio: '写入角色语音',
+  delete_reference_image: '删除参考图', clear_reference_image: '清空参考图',
+  delete_character_audio: '删除角色语音', clear_character_audio: '清空角色语音',
+};
+
+// 会真实消耗额度 / 直接改配置 / 删数据的动作，在预览里标红。
+const AGENT_RISKY_ACTIONS = new Set([
+  'set_path', 'delete_path', 'api_get', 'api_post',
+  'run_full_pipeline', 'create_project', 'delete_project', 'clear_elements',
+  'generate_all_episodes', 'generate_all_storyboards', 'generate_all_shot_videos',
+  'generate_shot_video', 'generate_image', 'run_batch_images',
+  'delete_chapter', 'delete_shot', 'delete_element',
+  'clear_shot_video', 'clear_pending_videos', 'clear_video_queue',
+]);
+
+export function agentActionLabel(type) {
+  return AGENT_ACTION_LABELS[type] || String(type || '未知动作');
+}
+
+export function isRiskyAgentAction(type) {
+  return AGENT_RISKY_ACTIONS.has(String(type || ''));
+}
+
 export function createAgentStateRuntime({ reactive } = {}) {
   return reactive({
     open: false,
@@ -9,6 +69,7 @@ export function createAgentStateRuntime({ reactive } = {}) {
     input: '',
     messages: [],
     lastPlan: null,
+    pendingPlan: null,
     logs: [],
     files: [],
     dragOver: false,

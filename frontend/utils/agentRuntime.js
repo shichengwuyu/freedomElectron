@@ -5,6 +5,12 @@ import {
   formatAgentFileSize,
   readAgentTxtFiles as readAgentTxtFilesData,
 } from './agentFiles.js';
+import {
+  AGENT_CAPABILITIES,
+  AGENT_EXAMPLES,
+  agentActionLabel,
+  isRiskyAgentAction,
+} from './agentUi.js';
 
 export function createAppAgentRuntime({
   api,
@@ -30,6 +36,13 @@ export function createAppAgentRuntime({
     agent,
     openAgent: runtime.openAgent,
     runAgentInstruction: runtime.runAgentInstruction,
+    runAgentPendingPlan: runtime.runAgentPendingPlan,
+    cancelAgentPendingPlan: runtime.cancelAgentPendingPlan,
+    AGENT_CAPABILITIES,
+    AGENT_EXAMPLES,
+    agentActionLabel,
+    isRiskyAgentAction,
+    useAgentExample: (text) => { agent.input = String(text || ''); },
     handleAgentInputKeydown: runtime.handleAgentInputKeydown,
     formatAgentFileSize,
     agentAttachmentLabel,
