@@ -35,6 +35,12 @@ desktop.ini
 .idea/
 .vscode/
 
+# ---------- 发行版出厂默认（预置自己的网关/购买入口，不进公开仓库） ----------
+backend/factory-defaults.json
+
+# ---------- 价格与购买信息（含联系方式，不进公开仓库） ----------
+docs/购买与价格.md
+
 # ---------- 授权服务端（私钥与账号数据绝不能入库） ----------
 license-server/keys/
 license-server/data/

@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { normalizePromptTemplateConfig, normalizeImageStyle, normalizeStylePrompts } from './prompts.js';
-import { writeJsonAtomic } from './lib/atomicJson.js';
+import { readJsonFile, writeJsonAtomic } from './lib/atomicJson.js';
 import { normalizeModelRouting } from './modelRouting.js';
 import {
   DEFAULT_IMAGE_API_BASE_URL,
@@ -21,6 +21,14 @@ import { normalizeLibtvVideoModelName } from './libtvModels.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
+
+// 出厂默认（可选，不进 git）：打包自己的发行版时放一份 backend/factory-defaults.json，
+// 用来预置「购买卡密」入口这类推广信息。公开仓库不带这个文件，所以开源版默认不显示任何推广入口。
+// 参照 backend/factory-defaults.example.json。
+const FACTORY_DEFAULTS = readJsonFile(path.join(__dirname, 'factory-defaults.json'), {}) || {};
+const FACTORY_GATEWAY = (FACTORY_DEFAULTS.gateway && typeof FACTORY_DEFAULTS.gateway === 'object')
+  ? FACTORY_DEFAULTS.gateway
+  : {};
 const APPDATA_ROOT = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
 const APPDATA_STORAGE_ROOT = path.join(APPDATA_ROOT, 'Freedom');
 const OLD_USER_APP_DIR = path.join(APPDATA_ROOT, 'GG Studio');
@@ -161,9 +169,9 @@ const DEFAULT_CONFIG = {
   // baseUrl 为网关地址（可在「模型网关」设置中修改），userToken 为 new-api 用户令牌（卡密兑换充到该账号）。
   // shopUrl 是可选的「购买卡密」入口：留空则设置面板不显示任何购买/推广入口（开源发行版默认留空）。
   gateway: {
-    baseUrl: 'https://api.xiaoyxiao.xyz',
+    baseUrl: String(FACTORY_GATEWAY.baseUrl || 'https://api.xiaoyxiao.xyz'),
     userToken: '',
-    shopUrl: '',
+    shopUrl: String(FACTORY_GATEWAY.shopUrl || ''),
   },
   image: {
     provider: 'api',
@@ -419,7 +427,9 @@ export function normalizeGateway(gateway = {}) {
     baseUrl: normalizeApiBaseUrl(gateway?.baseUrl, 'https://api.xiaoyxiao.xyz'),
     userToken: String(gateway?.userToken || '').trim(),
     // 运营可选：卡密购买页地址。留空 = 界面不显示购买入口。
-    shopUrl: String(gateway?.shopUrl || '').trim(),
+    // 回退到出厂默认：这样发行版的「购买入口」对已有旧配置的用户同样可见；
+    // 公开仓库没有 factory-defaults.json，此处即空，开源版仍然是干净的。
+    shopUrl: String(gateway?.shopUrl || FACTORY_GATEWAY.shopUrl || '').trim(),
   };
 }
 

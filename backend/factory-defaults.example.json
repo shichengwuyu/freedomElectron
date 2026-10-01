@@ -1,0 +1,7 @@
+{
+  "_comment": "出厂默认的示例。复制成 backend/factory-defaults.json（该文件不进 git）后会被打包进发行版，用来预置网关与「购买卡密」入口；公开仓库不带这个文件，所以开源版默认不显示任何推广入口。",
+  "gateway": {
+    "baseUrl": "https://api.xiaoyxiao.xyz",
+    "shopUrl": "https://api.xiaoyxiao.xyz/"
+  }
+}
